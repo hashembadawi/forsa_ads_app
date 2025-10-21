@@ -50,9 +50,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: _screens[_selectedIndex],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: SizedBox(
+      floatingActionButton: Container(
         width: fabSize,
         height: fabSize,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+        ),
         child: FloatingActionButton(
           onPressed: () async {
             final appState = ref.read(appStateProvider);
@@ -68,6 +72,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             }
             setState(() => _selectedIndex = 2);
           },
+          shape: const CircleBorder(),
+          elevation: 6,
           backgroundColor: AppTheme.primaryColor,
           child: const Icon(Icons.add, size: 32),
         ),
@@ -130,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: selected ? 28 : 24, color: selected ? AppTheme.primaryColor : Colors.grey),
+            Icon(icon, size: selected ? 34 : 28, color: selected ? AppTheme.primaryColor : Colors.grey),
             const SizedBox(height: 4),
             Text(label, style: TextStyle(fontSize: selected ? 12 : 11, color: selected ? AppTheme.primaryColor : Colors.grey)),
           ],
