@@ -1,0 +1,17 @@
+# إعدادات تحسين حجم وأداء التطبيق
+# تستخدم مع flutter build apk أو flutter build appbundle
+
+# تفعيل تقسيم الكود
+--split-per-abi
+
+# تفعيل ضغط الموارد
+--shrink
+
+# إزالة الكود غير المستخدم
+--obfuscate
+
+# تحسين حجم البيانات
+--tree-shake-icons
+
+# تقليل حجم الرموز
+--dart-define=flutter.inspector.structuredErrors=false
