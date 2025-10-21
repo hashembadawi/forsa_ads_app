@@ -55,7 +55,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         height: fabSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 3),
+          border: Border.all(color: AppTheme.surfaceColor, width: 3),
         ),
         child: FloatingActionButton(
           onPressed: () async {
@@ -136,9 +136,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: selected ? 34 : 28, color: selected ? AppTheme.primaryColor : Colors.grey),
+            Icon(icon, size: selected ? 34 : 28, color: selected ? AppTheme.primaryColor : AppTheme.textSecondaryColor),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: selected ? 12 : 11, color: selected ? AppTheme.primaryColor : Colors.grey)),
+            Text(label, style: TextStyle(fontSize: selected ? 12 : 11, color: selected ? AppTheme.primaryColor : AppTheme.textSecondaryColor)),
           ],
         ),
       ),

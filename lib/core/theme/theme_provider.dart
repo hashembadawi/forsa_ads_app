@@ -12,7 +12,7 @@ class ThemeSettings {
 
   const ThemeSettings({
     this.themeMode = AppThemeMode.system,
-    this.primaryColor = AppThemeManager.primaryBlue,
+    this.primaryColor = AppThemeManager.primaryGold,
     this.fontScale = 1.0,
   });
 
@@ -44,7 +44,7 @@ class ThemeSettings {
         (mode) => mode.name == map['themeMode'],
         orElse: () => AppThemeMode.system,
       ),
-      primaryColor: Color(map['primaryColor'] ?? (AppThemeManager.primaryBlue.r.toInt() << 16 | AppThemeManager.primaryBlue.g.toInt() << 8 | AppThemeManager.primaryBlue.b.toInt())),
+      primaryColor: Color(map['primaryColor'] ?? (AppThemeManager.primaryGold.r.toInt() << 16 | AppThemeManager.primaryGold.g.toInt() << 8 | AppThemeManager.primaryGold.b.toInt())),
       fontScale: (map['fontScale'] ?? 1.0).toDouble(),
     );
   }
@@ -72,7 +72,7 @@ class ThemeSettingsNotifier extends StateNotifier<ThemeSettings> {
         // في التطبيق الحقيقي، ستحتاج import 'dart:convert' واستخدام jsonDecode
         // للبساطة، سنحمل الإعدادات الأساسية فقط
         final themeModeName = _prefs!.getString('theme_mode') ?? 'system';
-        final primaryColorValue = _prefs!.getInt('primary_color') ?? (AppThemeManager.primaryBlue.r.toInt() << 16 | AppThemeManager.primaryBlue.g.toInt() << 8 | AppThemeManager.primaryBlue.b.toInt());
+        final primaryColorValue = _prefs!.getInt('primary_color') ?? (AppThemeManager.primaryGold.r.toInt() << 16 | AppThemeManager.primaryGold.g.toInt() << 8 | AppThemeManager.primaryGold.b.toInt());
         final fontScale = _prefs!.getDouble('font_scale') ?? 1.0;
 
         final themeMode = AppThemeMode.values.firstWhere(

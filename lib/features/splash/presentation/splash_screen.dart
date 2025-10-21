@@ -123,11 +123,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -145,7 +145,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               Text(
                 'فرصة',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
                 ),
@@ -156,7 +156,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               Text(
                 'FORSA',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
                   letterSpacing: 4,
                 ),
               ),
@@ -169,7 +169,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.white.withValues(alpha: 0.8),
+                    Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
                   ),
                 ),
               ),

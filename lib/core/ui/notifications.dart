@@ -443,7 +443,7 @@ class _TopSnackWidgetState extends State<_TopSnackWidget> with SingleTickerProvi
                       const SizedBox(width: 8),
                       if (widget.actionText != null && widget.onAction != null)
                         TextButton(onPressed: widget.onAction, child: Text(widget.actionText!)),
-                      GestureDetector(onTap: () => dismiss(), child: Icon(Icons.close, size: 18, color: Colors.grey[600])),
+                      GestureDetector(onTap: () => dismiss(), child: Icon(Icons.close, size: 18, color: AppTheme.textSecondaryColor)),
                     ]),
                     // Progress bar
                     const SizedBox(height: 8),

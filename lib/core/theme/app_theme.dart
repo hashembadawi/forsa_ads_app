@@ -22,22 +22,31 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        brightness: Brightness.light,
+      colorScheme: ColorScheme.light(
+        primary: primaryColor,
+        onPrimary: surfaceColor,
+        primaryContainer: primaryDarkColor,
+        onPrimaryContainer: surfaceColor,
+        secondary: accentColor,
+        onSecondary: surfaceColor,
+        error: errorColor,
+        onError: surfaceColor,
+        surface: surfaceColor,
+        onSurface: textPrimaryColor,
+        surfaceContainerHighest: backgroundColor,
       ),
       textTheme: GoogleFonts.notoSansArabicTextTheme(
         ThemeData.light().textTheme,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: surfaceColor,
         elevation: 2,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
+          foregroundColor: surfaceColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
