@@ -44,8 +44,8 @@ class HomeTab extends ConsumerWidget {
                     }
                     return Text(
                       greeting,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppTheme.surfaceColor,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -56,8 +56,8 @@ class HomeTab extends ConsumerWidget {
                     appState.isUserLoggedIn
                         ? AppStrings.welcomeSubtitleRegistered
                         : AppStrings.welcomeSubtitleGuest,
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppTheme.surfaceColor.withOpacity(0.7),
                       fontSize: 14,
                     ),
                   ),
@@ -135,7 +135,7 @@ class HomeTab extends ConsumerWidget {
                 Icon(
                   Icons.location_on,
                   size: 16,
-                  color: Colors.grey[600],
+                  color: AppTheme.textSecondaryColor,
                 ),
                 const SizedBox(width: 4),
                 Text(ad['location'] as String),

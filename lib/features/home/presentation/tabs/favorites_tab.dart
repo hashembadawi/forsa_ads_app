@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/strings.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class FavoritesTab extends StatelessWidget {
   const FavoritesTab({super.key});
@@ -12,7 +13,7 @@ class FavoritesTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.favorite_outline, size: 64, color: Colors.grey),
+            Icon(Icons.favorite_outline, size: 64, color: AppTheme.textSecondaryColor),
             SizedBox(height: 16),
             Text(AppStrings.favoritesEmpty),
           ],

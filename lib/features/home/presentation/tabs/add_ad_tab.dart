@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/strings.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class AddAdTab extends StatelessWidget {
   const AddAdTab({super.key});
@@ -12,7 +13,7 @@ class AddAdTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_circle_outline, size: 64, color: Colors.grey),
+            Icon(Icons.add_circle_outline, size: 64, color: AppTheme.textSecondaryColor),
             SizedBox(height: 16),
             Text(AppStrings.addAdEmpty),
           ],

@@ -29,7 +29,7 @@ class ProfileTab extends ConsumerWidget {
                   const CircleAvatar(
                     radius: 40,
                     backgroundColor: AppTheme.primaryColor,
-                    child: Icon(Icons.person, size: 40, color: Colors.white),
+                    child: Icon(Icons.person, size: 40, color: AppTheme.surfaceColor),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -82,8 +82,8 @@ class ProfileTab extends ConsumerWidget {
           if (appState.isUserLoggedIn) ...[
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: Text(AppStrings.logoutLabel, style: const TextStyle(color: Colors.red)),
+              leading: const Icon(Icons.logout, color: AppTheme.errorColor),
+              title: Text(AppStrings.logoutLabel, style: const TextStyle(color: AppTheme.errorColor)),
               onTap: () async {
                 final ok = await Notifications.showConfirm(context, AppStrings.logoutConfirm, confirmText: AppStrings.yes, cancelText: AppStrings.no);
                 if (ok == true) {

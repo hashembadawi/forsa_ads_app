@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../constants/strings.dart';
 import '../../shared/widgets/app_button.dart';
 import 'app_keys.dart';
+import '../theme/app_theme.dart';
 
 enum NotificationType { info, success, error, warning }
 
@@ -27,29 +28,28 @@ class Notifications {
   }
 
   static Color _backgroundColorForType(NotificationType type, {required BuildContext ctx}) {
-    final theme = Theme.of(ctx);
     switch (type) {
       case NotificationType.success:
-        return Colors.green.shade50;
+        return AppTheme.primaryColor.withOpacity(0.1); // ذهبي فاتح للنجاح
       case NotificationType.error:
-        return Colors.red.shade50;
+        return AppTheme.errorColor.withOpacity(0.1); // أحمر فاتح للخطأ
       case NotificationType.warning:
-        return Colors.amber.shade50;
+        return AppTheme.primaryDarkColor.withOpacity(0.15); // ذهبي داكن للتحذير
       case NotificationType.info:
-        return theme.snackBarTheme.backgroundColor ?? theme.colorScheme.surface;
+        return AppTheme.backgroundColor;
     }
   }
 
   static Color _iconColorForType(NotificationType type) {
     switch (type) {
       case NotificationType.success:
-        return Colors.green;
+        return AppTheme.primaryColor; // ذهبي للنجاح
       case NotificationType.error:
-        return Colors.redAccent;
+        return AppTheme.errorColor; // أحمر للخطأ
       case NotificationType.warning:
-        return Colors.amber.shade700;
+        return AppTheme.primaryDarkColor; // ذهبي داكن للتحذير
       case NotificationType.info:
-        return Colors.blueAccent;
+        return AppTheme.accentColor; // أزرق داكن للمعلومات
     }
   }
   static const Duration _defaultDuration = Duration(seconds: 3);
@@ -95,7 +95,7 @@ class Notifications {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withValues(alpha: 0.9), Theme.of(context).colorScheme.secondary.withValues(alpha: 0.9)]),
+                          gradient: LinearGradient(colors: [AppTheme.primaryColor.withOpacity(0.9), AppTheme.primaryDarkColor.withOpacity(0.9)]),
                         ),
                         child: const Padding(
                           padding: EdgeInsets.all(8.0),
@@ -145,11 +145,11 @@ class Notifications {
 
   // Dialogs: success / error / confirm use a consistent modal with icon
   static void showSuccess(BuildContext context, String message, {String? okText, VoidCallback? onOk}) {
-  _showIconDialog(context, message: message, icon: Icons.check_circle, iconColor: Colors.green, okText: okText ?? AppStrings.ok, onOk: onOk);
+  _showIconDialog(context, message: message, icon: Icons.check_circle, iconColor: AppTheme.primaryColor, okText: okText ?? AppStrings.ok, onOk: onOk);
   }
 
   static void showError(BuildContext context, String message, {String? okText, VoidCallback? onOk}) {
-  _showIconDialog(context, message: message, icon: Icons.error, iconColor: Colors.redAccent, okText: okText ?? AppStrings.ok, onOk: onOk);
+  _showIconDialog(context, message: message, icon: Icons.error, iconColor: AppTheme.errorColor, okText: okText ?? AppStrings.ok, onOk: onOk);
   }
 
   static Future<bool?> showConfirm(BuildContext context, String message, {String? confirmText, String? cancelText}) {
@@ -300,7 +300,7 @@ class Notifications {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.help_outline, size: 36, color: Colors.blueAccent),
+          Icon(Icons.help_outline, size: 36, color: AppTheme.accentColor),
           const SizedBox(height: 10),
           // Title removed intentionally (icon-only header)
           Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
