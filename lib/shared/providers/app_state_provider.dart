@@ -148,6 +148,9 @@ class AppStateNotifier extends StateNotifier<AppState> {
       await prefs.remove(_StorageKeys.userPhone);
       await prefs.remove(_StorageKeys.userFirstName);
       await prefs.remove(_StorageKeys.userLastName);
+      // حذف صورة البروفايل أيضاً
+      await prefs.remove('userProfileImage');
+      await prefs.remove('userId');
       
       state = state.copyWith(
         isUserLoggedIn: false,

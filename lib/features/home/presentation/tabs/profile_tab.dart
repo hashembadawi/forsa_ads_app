@@ -39,6 +39,11 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         setState(() {
           _profileImageBase64 = imageData;
         });
+      } else if (mounted) {
+        // إذا لم توجد صورة، تأكد من مسح الصورة الحالية
+        setState(() {
+          _profileImageBase64 = null;
+        });
       }
     } catch (e) {
       // ignore errors
@@ -93,6 +98,10 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
             'تم حذف الحساب بنجاح',
             okText: 'موافق',
             onOk: () async {
+              // مسح صورة البروفايل محلياً
+              setState(() {
+                _profileImageBase64 = null;
+              });
               // تسجيل الخروج وحذف البيانات المحلية
               await ref.read(appStateProvider.notifier).logoutUser();
               if (context.mounted) {
@@ -178,6 +187,18 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   @override
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
+    
+    // مراقبة تغييرات حالة تسجيل الدخول
+    ref.listen<AppState>(appStateProvider, (previous, next) {
+      // إذا تم تسجيل الخروج (من مسجل إلى غير مسجل)
+      if (previous?.isUserLoggedIn == true && next.isUserLoggedIn == false) {
+        if (mounted) {
+          setState(() {
+            _profileImageBase64 = null; // مسح الصورة
+          });
+        }
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.profileTitle)),
