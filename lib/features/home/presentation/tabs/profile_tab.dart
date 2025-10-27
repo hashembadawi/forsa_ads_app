@@ -135,6 +135,46 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     }
   }
 
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Colors.grey[700]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(fontSize: 13, color: Colors.black87),
+              children: [
+                TextSpan(text: '$label ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                TextSpan(text: value),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle, size: 16, color: Colors.green),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
@@ -489,7 +529,81 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
           ListTile(
             leading: const Icon(Icons.info),
             title: Text(AppStrings.aboutLabel),
-            onTap: () {},
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Row(
+                    children: [
+                      Icon(Icons.store, color: Theme.of(context).colorScheme.primary, size: 28),
+                      const SizedBox(width: 8),
+                      const Text('حول التطبيق'),
+                    ],
+                  ),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'فرصة - منصة الإعلانات المبوبة',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildInfoRow(Icons.business, 'الشركة الناشرة:', 'Forsa Tech Solutions'),
+                        const SizedBox(height: 12),
+                        _buildInfoRow(Icons.calendar_today, 'سنة النشر:', '2025'),
+                        const SizedBox(height: 12),
+                        _buildInfoRow(Icons.info_outline, 'الإصدار:', '1.0.0'),
+                        const SizedBox(height: 12),
+                        _buildInfoRow(Icons.phone_android, 'المنصة:', 'Android & iOS'),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'عن التطبيق:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'فرصة هو تطبيق إعلانات مبوبة شامل يتيح لك شراء وبيع المنتجات والخدمات بكل سهولة وأمان. نوفر منصة موثوقة تربط البائعين بالمشترين في بيئة آمنة ومنظمة.',
+                          style: TextStyle(fontSize: 13, height: 1.5),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'مميزات التطبيق:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildFeatureItem('سهولة النشر والبحث عن الإعلانات'),
+                        _buildFeatureItem('تصنيفات متعددة ومتنوعة'),
+                        _buildFeatureItem('واجهة مستخدم عصرية وسهلة'),
+                        _buildFeatureItem('نظام حماية وأمان للمستخدمين'),
+                        _buildFeatureItem('دعم فني متواصل'),
+                        const SizedBox(height: 16),
+                        Center(
+                          child: Text(
+                            '© 2025 Forsa. جميع الحقوق محفوظة',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('إغلاق'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
 
           if (appState.isUserLoggedIn) ...[

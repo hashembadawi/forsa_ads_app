@@ -125,11 +125,7 @@ class HelpScreen extends StatelessWidget {
                         SelectableText('905510300730', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
-                          icon: Image.asset(
-                            'assets/flags/sy.png',
-                            width: 22,
-                            height: 22,
-                          ),
+                          icon: const Icon(Icons.chat, color: Colors.white),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF25D366),
                             foregroundColor: Colors.white,
