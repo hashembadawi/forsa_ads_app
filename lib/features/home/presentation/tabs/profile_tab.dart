@@ -1,18 +1,142 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/strings.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/notifications.dart';
 import '../../../../shared/providers/app_state_provider.dart';
+import '../../../../core/utils/network_utils.dart';
+import 'dart:convert';
+import 'edit_profile_screen.dart';
+import 'help_screen.dart'; // استيراد شاشة المساعدة الجديدة
 
-class ProfileTab extends ConsumerWidget {
+
+class ProfileTab extends ConsumerStatefulWidget {
   const ProfileTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends ConsumerState<ProfileTab> {
+  String? _profileImageBase64;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage();
+  }
+
+  Future<void> _loadProfileImage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final imageData = prefs.getString('userProfileImage');
+      if (mounted && imageData != null && imageData.isNotEmpty) {
+        setState(() {
+          _profileImageBase64 = imageData;
+        });
+      }
+    } catch (e) {
+      // ignore errors
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    try {
+      // التحقق من الاتصال بالإنترنت
+      final hasConnection = await NetworkUtils.ensureConnected(context);
+      if (!hasConnection || !mounted) return;
+
+      // الحصول على userId و token
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId');
+      final token = prefs.getString('user_token');
+
+      if (userId == null || token == null) {
+        if (mounted) {
+          Notifications.showError(context, 'لم يتم العثور على بيانات المستخدم');
+        }
+        return;
+      }
+
+      // عرض مؤشر التحميل
+      if (mounted) {
+        Notifications.showLoading(context, message: 'جاري حذف الحساب...');
+      }
+
+      // إرسال طلب الحذف
+      final response = await http.delete(
+        Uri.parse('https://sahbo-app-api.onrender.com/api/user/delete-account'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'userId': userId,
+        }),
+      ).timeout(const Duration(seconds: 20));
+
+      if (!mounted) return;
+
+      // إخفاء مؤشر التحميل
+      Notifications.hideLoading(context);
+
+      if (response.statusCode == 200) {
+        // نجح الحذف
+        if (mounted) {
+          Notifications.showSuccess(
+            context,
+            'تم حذف الحساب بنجاح',
+            okText: 'موافق',
+            onOk: () async {
+              // تسجيل الخروج وحذف البيانات المحلية
+              await ref.read(appStateProvider.notifier).logoutUser();
+              if (context.mounted) {
+                context.go(AppConstants.welcomeRoute);
+              }
+            },
+          );
+        }
+      } else {
+        // فشل الحذف
+        if (mounted) {
+          final errorData = jsonDecode(response.body);
+          final errorMessage = errorData['message'] ?? 'فشل حذف الحساب';
+          Notifications.showError(context, errorMessage);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Notifications.hideLoading(context);
+        Notifications.showError(context, 'حدث خطأ أثناء حذف الحساب. يرجى المحاولة لاحقاً');
+      }
+    }
+  }
+
+  void _showEditProfileDialog() async {
+    // Navigate to edit profile screen
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EditProfileScreen(),
+      ),
+    );
+    
+    // If update was successful, reload profile image
+    if (result == true && mounted) {
+      setState(() {
+        _profileImageBase64 = null;
+      });
+      await _loadProfileImage();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
 
     return Scaffold(
@@ -42,7 +166,101 @@ class ProfileTab extends ConsumerWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
+              child: Column(
+                children: [
+                  // أزرار التعديل والحذف (فقط للمستخدمين المسجلين)
+                  if (appState.isUserLoggedIn)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // زر التعديل
+                        InkWell(
+                          onTap: () {
+                            // الانتقال إلى شاشة تعديل الملف الشخصي
+                            _showEditProfileDialog();
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.edit_rounded,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'تعديل',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // زر الحذف
+                        InkWell(
+                          onTap: () async {
+                            final ok = await Notifications.showConfirm(
+                              context,
+                              'هل أنت متأكد من حذف الحساب؟ هذا الإجراء لا يمكن التراجع عنه وسيتم حذف جميع بياناتك نهائياً.',
+                              confirmText: 'حذف الحساب',
+                              cancelText: 'إلغاء',
+                            );
+                            if (ok == true) {
+                              await _deleteAccount();
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.errorColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppTheme.errorColor.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.delete_rounded,
+                                  size: 16,
+                                  color: AppTheme.errorColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'حذف',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppTheme.errorColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  
+                  if (appState.isUserLoggedIn)
+                    const SizedBox(height: 12),
+                  
+                  // محتوى البطاقة الأصلي
+                  Row(
                 children: [
                   // صورة البروفايل على اليمين
                   Stack(
@@ -83,11 +301,16 @@ class ProfileTab extends ConsumerWidget {
                         child: CircleAvatar(
                           radius: 30,
                           backgroundColor: Theme.of(context).colorScheme.primary,
-                          child: Icon(
-                            Icons.person_rounded,
-                            size: 32,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                          ),
+                          backgroundImage: _profileImageBase64 != null && _profileImageBase64!.isNotEmpty
+                              ? MemoryImage(base64Decode(_profileImageBase64!))
+                              : null,
+                          child: _profileImageBase64 == null || _profileImageBase64!.isEmpty
+                              ? Icon(
+                                  Icons.person_rounded,
+                                  size: 32,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                )
+                              : null,
                         ),
                       ),
                       // أيقونة التعديل
@@ -231,6 +454,8 @@ class ProfileTab extends ConsumerWidget {
                   ),
                 ],
               ),
+                ],
+              ),
             ),
           ),
 
@@ -249,11 +474,16 @@ class ProfileTab extends ConsumerWidget {
             const Divider(),
           ],
 
-          // Settings removed as requested
+          // إعدادات الحساب
+          // تم إزالة قسم الإعدادات بناءً على الطلب
           ListTile(
             leading: const Icon(Icons.help),
             title: Text(AppStrings.helpLabel),
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const HelpScreen()),
+              );
+            },
           ),
           const Divider(),
           ListTile(

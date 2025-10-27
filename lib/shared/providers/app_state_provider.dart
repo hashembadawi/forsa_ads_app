@@ -163,6 +163,30 @@ class AppStateNotifier extends StateNotifier<AppState> {
     }
   }
 
+  Future<void> updateUserInfo({String? firstName, String? lastName}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Update only provided values
+      if (firstName != null) {
+        await prefs.setString(_StorageKeys.userFirstName, firstName);
+      }
+      if (lastName != null) {
+        await prefs.setString(_StorageKeys.userLastName, lastName);
+      }
+      
+      // Update state with new values (or keep existing if null)
+      state = state.copyWith(
+        userFirstName: firstName ?? state.userFirstName,
+        userLastName: lastName ?? state.userLastName,
+      );
+      
+      logger.info('User info updated', tag: 'APP_STATE');
+    } catch (e) {
+      logger.error('Failed to update user info', error: e, tag: 'APP_STATE');
+    }
+  }
+
   Future<void> browseAsGuest() async {
     try {
       final prefs = await SharedPreferences.getInstance();
