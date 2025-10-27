@@ -30,26 +30,26 @@ class Notifications {
   static Color _backgroundColorForType(NotificationType type, {required BuildContext ctx}) {
     switch (type) {
       case NotificationType.success:
-        return AppTheme.primaryColor.withOpacity(0.1); // ذهبي فاتح للنجاح
+        return AppTheme.successColor.withOpacity(0.1); // أخضر فاتح
       case NotificationType.error:
-        return AppTheme.errorColor.withOpacity(0.1); // أحمر فاتح للخطأ
+        return AppTheme.errorColor.withOpacity(0.1); // أحمر فاتح
       case NotificationType.warning:
-        return AppTheme.primaryDarkColor.withOpacity(0.15); // ذهبي داكن للتحذير
+        return AppTheme.warningColor.withOpacity(0.1); // برتقالي فاتح
       case NotificationType.info:
-        return AppTheme.backgroundColor;
+        return AppTheme.infoColor.withOpacity(0.1); // أزرق فاتح
     }
   }
 
   static Color _iconColorForType(NotificationType type) {
     switch (type) {
       case NotificationType.success:
-        return AppTheme.primaryColor; // ذهبي للنجاح
+        return AppTheme.successColor; // أخضر
       case NotificationType.error:
-        return AppTheme.errorColor; // أحمر للخطأ
+        return AppTheme.errorColor; // أحمر
       case NotificationType.warning:
-        return AppTheme.primaryDarkColor; // ذهبي داكن للتحذير
+        return AppTheme.warningColor; // برتقالي
       case NotificationType.info:
-        return AppTheme.accentColor; // أزرق داكن للمعلومات
+        return AppTheme.infoColor; // أزرق فاتح
     }
   }
   static const Duration _defaultDuration = Duration(seconds: 3);
@@ -145,7 +145,7 @@ class Notifications {
 
   // Dialogs: success / error / confirm use a consistent modal with icon
   static void showSuccess(BuildContext context, String message, {String? okText, VoidCallback? onOk}) {
-  _showIconDialog(context, message: message, icon: Icons.check_circle, iconColor: AppTheme.primaryColor, okText: okText ?? AppStrings.ok, onOk: onOk);
+  _showIconDialog(context, message: message, icon: Icons.check_circle, iconColor: AppTheme.successColor, okText: okText ?? AppStrings.ok, onOk: onOk);
   }
 
   static void showError(BuildContext context, String message, {String? okText, VoidCallback? onOk}) {
@@ -300,7 +300,7 @@ class Notifications {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.help_outline, size: 36, color: AppTheme.accentColor),
+          Icon(Icons.help_outline, size: 36, color: AppTheme.infoColor),
           const SizedBox(height: 10),
           // Title removed intentionally (icon-only header)
           Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),

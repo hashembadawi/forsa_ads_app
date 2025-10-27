@@ -13,7 +13,7 @@ class AddAdTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_circle_outline, size: 64, color: AppTheme.textSecondaryColor),
+            Icon(Icons.add_circle_outline, size: 64, color: AppTheme.iconInactiveColor),
             SizedBox(height: 16),
             Text(AppStrings.addAdEmpty),
           ],

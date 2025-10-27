@@ -74,8 +74,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
           shape: const CircleBorder(),
           elevation: 6,
-          backgroundColor: AppTheme.primaryColor,
-          child: const Icon(Icons.add, size: 32),
+          backgroundColor: AppTheme.accentColor, // برتقالي للنشاط والحيوية
+          child: const Icon(Icons.add, size: 32, color: Colors.white),
         ),
       ),
       bottomNavigationBar: BottomAppBar(
@@ -136,9 +136,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: selected ? 34 : 28, color: selected ? AppTheme.primaryColor : AppTheme.textSecondaryColor),
+            Icon(icon, size: selected ? 34 : 28, color: selected ? AppTheme.primaryColor : AppTheme.iconInactiveColor),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: selected ? 12 : 11, color: selected ? AppTheme.primaryColor : AppTheme.textSecondaryColor)),
+            Text(label, style: TextStyle(fontSize: selected ? 12 : 11, color: selected ? AppTheme.primaryColor : AppTheme.iconInactiveColor)),
           ],
         ),
       ),

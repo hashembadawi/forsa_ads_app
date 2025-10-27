@@ -45,7 +45,7 @@ class HomeTab extends ConsumerWidget {
                     return Text(
                       greeting,
                       style: TextStyle(
-                        color: AppTheme.surfaceColor,
+                        color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -57,7 +57,7 @@ class HomeTab extends ConsumerWidget {
                         ? AppStrings.welcomeSubtitleRegistered
                         : AppStrings.welcomeSubtitleGuest,
                     style: TextStyle(
-                      color: AppTheme.surfaceColor.withOpacity(0.7),
+                      color: Colors.white.withOpacity(0.9),
                       fontSize: 14,
                     ),
                   ),

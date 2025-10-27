@@ -4,18 +4,18 @@ import 'package:google_fonts/google_fonts.dart';
 /// مدير الثيم المحسن للأداء مع خط Inter فقط
 class AppThemeManager {
   
-  // الألوان الأساسية للتطبيق - Desert Gold Theme
-  static const Color primaryGold = Color(0xFFD4AF37); // ذهبي دافئ
-  static const Color primaryGoldDark = Color(0xFFB8941F); // ذهبي داكن
-  static const Color accentNavy = Color(0xFF2C3E50); // أزرق داكن
-  static const Color backgroundLight = Color(0xFFF8F9FA); // رمادي فاتح
+  // الألوان الأساسية للتطبيق - نظام مناسب للسوق السوري
+  static const Color primaryBlue = Color(0xFF2196F3); // أزرق سماوي
+  static const Color primaryBlueDark = Color(0xFF1976D2); // أزرق متوسط داكن
+  static const Color accentOrange = Color(0xFFFF9800); // برتقالي دافئ
+  static const Color backgroundLight = Color(0xFFFAFAFA); // رمادي فاتح جداً
   
   // ثيم فاتح محسن للغة العربية
   static ThemeData getLightTheme({
     Color? primaryColor,
     double fontScale = 1.0,
   }) {
-    final primary = primaryColor ?? primaryGold;
+    final primary = primaryColor ?? primaryBlue;
     
     return ThemeData(
       useMaterial3: true,
@@ -84,7 +84,7 @@ class AppThemeManager {
     Color? primaryColor,
     double fontScale = 1.0,
   }) {
-    final primary = primaryColor ?? primaryGold;
+    final primary = primaryColor ?? primaryBlue;
     
     return ThemeData(
       useMaterial3: true,
@@ -256,9 +256,9 @@ class AppThemeManager {
   
   /// الألوان المتاحة للاختيار
   static List<Color> get availableColors => [
-    primaryGold,
-    primaryGoldDark,
-    accentNavy,
+    primaryBlue,
+    primaryBlueDark,
+    accentOrange,
     Colors.red,
     Colors.teal,
     Colors.indigo,

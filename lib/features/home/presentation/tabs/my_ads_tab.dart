@@ -13,7 +13,7 @@ class MyAdsTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.campaign_outlined, size: 64, color: AppTheme.textSecondaryColor),
+            Icon(Icons.campaign_outlined, size: 64, color: AppTheme.iconInactiveColor),
             SizedBox(height: 16),
             Text(AppStrings.myAdsEmpty),
           ],

@@ -13,7 +13,7 @@ class FavoritesTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.favorite_outline, size: 64, color: AppTheme.textSecondaryColor),
+            Icon(Icons.favorite_outline, size: 64, color: AppTheme.iconInactiveColor),
             SizedBox(height: 16),
             Text(AppStrings.favoritesEmpty),
           ],
