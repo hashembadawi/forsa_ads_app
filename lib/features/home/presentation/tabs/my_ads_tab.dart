@@ -1,24 +1,273 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/strings.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../providers/user_ads_provider.dart';
+import '../widgets/user_ad_card.dart';
+import '../widgets/ad_card_shimmer.dart';
 
-class MyAdsTab extends StatelessWidget {
+class MyAdsTab extends ConsumerStatefulWidget {
   const MyAdsTab({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.navMyAds)),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  ConsumerState<MyAdsTab> createState() => _MyAdsTabState();
+}
+
+class _MyAdsTabState extends ConsumerState<MyAdsTab> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Load ads on first build
+    Future.microtask(() {
+      ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
+    });
+
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.8) {
+      ref.read(userAdsProvider.notifier).loadMore();
+    }
+  }
+
+  void _showErrorSnackBar(String message, {bool isNoInternet = false}) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
           children: [
-            Icon(Icons.campaign_outlined, size: 64, color: AppTheme.iconInactiveColor),
-            SizedBox(height: 16),
-            Text(AppStrings.myAdsEmpty),
+            Icon(
+              isNoInternet ? Icons.wifi_off_rounded : Icons.error_outline,
+              color: Theme.of(context).colorScheme.onError,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(message),
+            ),
           ],
         ),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'إعادة',
+          textColor: Theme.of(context).colorScheme.onError,
+          onPressed: () {
+            ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
+          },
+        ),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(userAdsProvider);
+
+    // Show error snackbar when there's an error and we have existing ads
+    ref.listen<UserAdsState>(userAdsProvider, (previous, current) {
+      if (current.error != null && current.ads.isNotEmpty && !current.isLoading) {
+        _showErrorSnackBar(current.error!, isNoInternet: current.isNoInternet);
+      }
+    });
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Text(AppStrings.navMyAds),
+            if (state.totalAds > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${state.totalAds}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
+        },
+        child: _buildBody(state),
+      ),
+    );
+  }
+
+  Widget _buildBody(UserAdsState state) {
+    // Show no internet state
+    if (state.isNoInternet && state.ads.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.wifi_off_rounded,
+              size: 80,
+              color: AppTheme.iconInactiveColor,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'لا يوجد اتصال بالإنترنت',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show error state
+    if (state.error != null && state.ads.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              state.isNoInternet ? Icons.wifi_off_rounded : Icons.error_outline,
+              size: 64,
+              color: AppTheme.errorColor,
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                state.error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppTheme.errorColor),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
+              },
+              child: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show loading shimmer on first load
+    if (state.isLoading && state.ads.isEmpty) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.65,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: 6, // Show 6 shimmer cards
+        itemBuilder: (context, index) => const AdCardShimmer(),
+      );
+    }
+
+    // Show empty state
+    if (state.ads.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.campaign_outlined,
+              size: 64,
+              color: AppTheme.iconInactiveColor,
+            ),
+            const SizedBox(height: 16),
+            const Text(AppStrings.myAdsEmpty),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Navigate to add ad screen
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('أضف أول إعلان'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show ads grid with pagination
+    return GridView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.65,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: state.ads.length + (state.hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        // Show loading indicator at the end
+        if (index == state.ads.length) {
+          return Center(
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryColor,
+                  strokeWidth: 2.5,
+                ),
+              ),
+            ),
+          );
+        }
+
+        return UserAdCard(ad: state.ads[index]);
+      },
+    );
+  }
 }
+
