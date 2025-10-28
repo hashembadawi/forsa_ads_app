@@ -24,29 +24,52 @@ class ProfileTab extends ConsumerStatefulWidget {
 
 class _ProfileTabState extends ConsumerState<ProfileTab> {
   String? _profileImageBase64;
+  bool _isLoadingImage = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProfileImage();
+    // تحميل الصورة عند بدء الشاشة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appState = ref.read(appStateProvider);
+      if (appState.isUserLoggedIn) {
+        _loadProfileImage();
+      }
+    });
   }
 
   Future<void> _loadProfileImage() async {
+    if (_isLoadingImage) return; // منع التحميل المتكرر
+    
+    setState(() {
+      _isLoadingImage = true;
+    });
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final imageData = prefs.getString('userProfileImage');
-      if (mounted && imageData != null && imageData.isNotEmpty) {
+      
+      if (mounted) {
         setState(() {
-          _profileImageBase64 = imageData;
-        });
-      } else if (mounted) {
-        // إذا لم توجد صورة، تأكد من مسح الصورة الحالية
-        setState(() {
-          _profileImageBase64 = null;
+          _profileImageBase64 = (imageData != null && imageData.isNotEmpty) ? imageData : null;
+          _isLoadingImage = false;
         });
       }
     } catch (e) {
-      // ignore errors
+      if (mounted) {
+        setState(() {
+          _profileImageBase64 = null;
+          _isLoadingImage = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _clearProfileImage() async {
+    if (mounted) {
+      setState(() {
+        _profileImageBase64 = null;
+      });
     }
   }
 
@@ -137,9 +160,6 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     
     // If update was successful, reload profile image
     if (result == true && mounted) {
-      setState(() {
-        _profileImageBase64 = null;
-      });
       await _loadProfileImage();
     }
   }
@@ -188,17 +208,30 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
     
-    // مراقبة تغييرات حالة تسجيل الدخول
+    // مراقبة تغييرات حالة تسجيل الدخول بشكل احترافي
     ref.listen<AppState>(appStateProvider, (previous, next) {
-      // إذا تم تسجيل الخروج (من مسجل إلى غير مسجل)
+      if (!mounted) return;
+      
+      // السيناريو 1: المستخدم سجّل الدخول (من غير مسجل إلى مسجل)
+      if (previous?.isUserLoggedIn == false && next.isUserLoggedIn == true) {
+        _loadProfileImage(); // تحميل الصورة عند تسجيل الدخول
+      }
+      
+      // السيناريو 2: المستخدم سجّل الخروج (من مسجل إلى غير مسجل)
       if (previous?.isUserLoggedIn == true && next.isUserLoggedIn == false) {
-        if (mounted) {
-          setState(() {
-            _profileImageBase64 = null; // مسح الصورة
-          });
-        }
+        _clearProfileImage(); // مسح الصورة عند تسجيل الخروج
       }
     });
+    
+    // تحميل الصورة عند العودة للشاشة إذا كان المستخدم مسجل ولا توجد صورة محملة
+    if (appState.isUserLoggedIn && _profileImageBase64 == null && !_isLoadingImage) {
+      // استخدام addPostFrameCallback لتجنب استدعاء setState أثناء build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && appState.isUserLoggedIn && _profileImageBase64 == null) {
+          _loadProfileImage();
+        }
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.profileTitle)),
@@ -362,10 +395,15 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                         child: CircleAvatar(
                           radius: 30,
                           backgroundColor: Theme.of(context).colorScheme.primary,
-                          backgroundImage: _profileImageBase64 != null && _profileImageBase64!.isNotEmpty
+                          // عرض الصورة فقط إذا كان المستخدم مسجل ولديه صورة
+                          backgroundImage: appState.isUserLoggedIn && 
+                                          _profileImageBase64 != null && 
+                                          _profileImageBase64!.isNotEmpty
                               ? MemoryImage(base64Decode(_profileImageBase64!))
                               : null,
-                          child: _profileImageBase64 == null || _profileImageBase64!.isEmpty
+                          child: !appState.isUserLoggedIn || 
+                                 _profileImageBase64 == null || 
+                                 _profileImageBase64!.isEmpty
                               ? Icon(
                                   Icons.person_rounded,
                                   size: 32,
