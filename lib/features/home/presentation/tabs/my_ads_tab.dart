@@ -201,7 +201,7 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
         padding: const EdgeInsets.all(8),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.65,
+          childAspectRatio: 0.72,
           crossAxisSpacing: 6,
           mainAxisSpacing: 8,
         ),
@@ -242,7 +242,7 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.65,
+        childAspectRatio: 0.72,
         crossAxisSpacing: 6,
         mainAxisSpacing: 8,
       ),

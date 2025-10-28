@@ -232,17 +232,15 @@ class UserAdCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  
-                  const Spacer(),
-                  
-                  // Divider
+                  const SizedBox(height: 2),
+
+                  // Ultra-thin divider with minimal padding
                   Divider(
-                    height: 1,
+                    height: 0.5,
                     thickness: 0.5,
-                    color: Theme.of(context).dividerColor,
+                    color: Theme.of(context).dividerColor.withOpacity(0.6),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 2),
                   
                   // Time info (first line)
                   Row(
