@@ -28,140 +28,38 @@ class AdCardShimmer extends StatelessWidget {
               ),
             ),
           ),
-          
-          // Content shimmer
+          // Minimal content shimmer: two blocks only under image
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title shimmer (2 lines)
-                  Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          width: double.infinity * 0.6,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  
-                  // Category badge shimmer
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(
-                        width: 70,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  
-                  // Price shimmer
                   Shimmer.fromColors(
                     baseColor: Colors.grey[300]!,
                     highlightColor: Colors.grey[100]!,
                     child: Container(
-                      width: 100,
-                      height: 16,
+                      width: double.infinity,
+                      height: 12,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),
-                  
-                  const Spacer(),
-                  
-                  // Divider shimmer
+                  const SizedBox(height: 8),
                   Shimmer.fromColors(
                     baseColor: Colors.grey[300]!,
                     highlightColor: Colors.grey[100]!,
-                    child: Container(
-                      height: 1,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  
-                  // Location shimmer
-                  Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 13,
-                          height: 13,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
+                    child: FractionallySizedBox(
+                      widthFactor: 0.6,
+                      child: Container(
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 80,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  
-                  // Time shimmer
-                  Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 13,
-                          height: 13,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 90,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],

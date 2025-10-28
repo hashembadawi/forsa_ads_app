@@ -139,7 +139,7 @@ class UserAdCard extends StatelessWidget {
           // Content section
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -155,62 +155,57 @@ class UserAdCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   
-                  // Category badge (no border + category icon)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.category_outlined,
-                            size: 12,
-                            color: AppTheme.primaryColor,
-                          ),
-                          const SizedBox(width: 4),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 120),
-                            child: Text(
-                              ad.categoryName,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: AppTheme.primaryColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                  // Category + Price row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Category (expands as needed)
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.category_outlined,
+                              size: 14,
+                              color: AppTheme.iconInactiveColor,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  
-                  // Price - prominent display
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '${_formatPrice(ad.price)} ${ad.currencyName}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
-                          letterSpacing: 0.5,
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                ad.categoryName,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      // Price (prominent, no overflow)
+                      Flexible(
+                        fit: FlexFit.loose,
+                        child: Text(
+                          '${_formatPrice(ad.price)} ${ad.currencyName}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 6),
                   
                   const Spacer(),
                   
@@ -220,13 +215,12 @@ class UserAdCard extends StatelessWidget {
                     thickness: 0.5,
                     color: Theme.of(context).dividerColor,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   
-                  // Time + Location in one line with separator
+                  // Time info (first line)
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.access_time_rounded,
                         size: 13,
                         color: AppTheme.iconInactiveColor,
@@ -243,18 +237,13 @@ class UserAdCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      // Middle dot separator
-                      Container(
-                        width: 3,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Location info (second line)
+                  Row(
+                    children: [
+                      const Icon(
                         Icons.location_on_outlined,
                         size: 13,
                         color: AppTheme.iconInactiveColor,
