@@ -1,11 +1,20 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' as intl;
 import '../../data/models/user_ad.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../home/data/services/options_service.dart';
+import 'package:dio/dio.dart';
+import '../../../../core/ui/notifications.dart';
 
 class UserAdCard extends StatelessWidget {
+  // Recommended grid childAspectRatio for this card when used inside GridView.
+  // Keeping it here centralizes sizing decisions related to the card.
+  static const double kGridAspectRatio = 0.65;
+
   final UserAd ad;
 
   const UserAdCard({super.key, required this.ad});
@@ -85,12 +94,16 @@ class UserAdCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
+    return GestureDetector(
+      onTap: () {
+        _handleTap(context);
+      },
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -288,12 +301,62 @@ class UserAdCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 4),
+                  // Approval status at the bottom of the card
+                  Row(
+                    children: [
+                      Icon(
+                        ad.isApproved ? Icons.verified_outlined : Icons.hourglass_bottom_rounded,
+                        size: 13,
+                        color: ad.isApproved
+                            ? Colors.green
+                            : AppTheme.warningColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          ad.isApproved ? 'تمت الموافقة من الإدارة' : 'بانتظار الموافقة',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: ad.isApproved
+                                ? Colors.green
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
         ],
       ),
+    ),
     );
+  }
+}
+
+extension on UserAdCard {
+  Future<void> _handleTap(BuildContext context) async {
+    try {
+      Notifications.showLoading(context, message: 'جاري التحضير...');
+      final service = OptionsService(Dio());
+      final currencies = await service.fetchCurrencies();
+      if (!context.mounted) return;
+      Notifications.hideLoading(context);
+      context.push(AppRoutes.editAd, extra: {
+        'ad': ad,
+        'currencies': currencies,
+      });
+    } catch (e) {
+      if (context.mounted) {
+        Notifications.hideLoading(context);
+        Notifications.showError(context, 'فشل تحميل الخيارات. يرجى المحاولة لاحقاً');
+      }
+    }
   }
 }

@@ -5,6 +5,8 @@ import '../ui/app_keys.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/welcome/presentation/welcome_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/home/presentation/screens/edit_ad_screen.dart';
+import '../../features/home/data/models/user_ad.dart';
 import '../../features/auth/presentation/auth_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/auth_choice_screen.dart';
@@ -52,6 +54,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           int? selectedTab;
           if (extra is Map && extra['selectedTab'] is int) selectedTab = extra['selectedTab'] as int;
           return _sharedTransitionPage(child: HomeScreen(initialIndex: selectedTab), key: state.pageKey);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.editAd,
+        name: RouteNames.editAd,
+        pageBuilder: (context, state) {
+          logger.debug('Building edit ad screen', tag: 'ROUTER');
+          final extra = state.extra;
+          UserAd ad;
+          List<dynamic> currencies = const [];
+          if (extra is Map) {
+            ad = extra['ad'] as UserAd;
+            currencies = (extra['currencies'] as List?) ?? const [];
+          } else {
+            ad = extra as UserAd;
+          }
+          return _sharedTransitionPage(child: EditAdScreen(ad: ad, currencies: currencies), key: state.pageKey);
         },
       ),
       GoRoute(
@@ -124,13 +143,14 @@ class AppRoutes {
   static const String splash = '/';
   static const String welcome = '/welcome';
   static const String home = '/home';
+  static const String editAd = '/edit-ad';
   static const String authChoice = '/auth-choice';
   static const String login = '/login';
   static const String register = '/register';
   static const String verify = '/verify';
   
   /// Get all available routes
-  static List<String> get allRoutes => [splash, welcome, home, authChoice, login, register];
+  static List<String> get allRoutes => [splash, welcome, home, editAd, authChoice, login, register];
   
   /// Validate if route exists
   static bool isValidRoute(String route) => allRoutes.contains(route);
@@ -141,6 +161,7 @@ class RouteNames {
   static const String splash = 'splash';
   static const String welcome = 'welcome';
   static const String home = 'home';
+  static const String editAd = 'editAd';
   static const String authChoice = 'authChoice';
   static const String login = 'login';
   static const String register = 'register';

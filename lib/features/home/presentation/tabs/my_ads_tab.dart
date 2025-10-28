@@ -43,6 +43,10 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
 
   void _showErrorSnackBar(String message, {bool isNoInternet = false}) {
     if (!mounted) return;
+
+    final displayMessage = isNoInternet
+        ? message
+        : 'حدث خطأ ما يرجى المحاولة مجددا';
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -54,7 +58,7 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(message),
+              child: Text(displayMessage),
             ),
           ],
         ),
@@ -178,7 +182,7 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                state.error!,
+                'حدث خطأ ما يرجى المحاولة مجددا',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppTheme.errorColor),
               ),
@@ -201,7 +205,7 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
         padding: const EdgeInsets.all(8),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.72,
+          childAspectRatio: UserAdCard.kGridAspectRatio,
           crossAxisSpacing: 6,
           mainAxisSpacing: 8,
         ),
@@ -242,7 +246,7 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.72,
+        childAspectRatio: UserAdCard.kGridAspectRatio,
         crossAxisSpacing: 6,
         mainAxisSpacing: 8,
       ),
