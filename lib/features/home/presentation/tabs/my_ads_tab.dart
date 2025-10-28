@@ -198,12 +198,12 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
     // Show loading shimmer on first load
     if (state.isLoading && state.ads.isEmpty) {
       return GridView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.65,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+          crossAxisSpacing: 6,
+          mainAxisSpacing: 8,
         ),
         itemCount: 6, // Show 6 shimmer cards
         itemBuilder: (context, index) => const AdCardShimmer(),
@@ -239,12 +239,12 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
     // Show ads grid with pagination
     return GridView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.65,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: 6,
+        mainAxisSpacing: 8,
       ),
       itemCount: state.ads.length + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {

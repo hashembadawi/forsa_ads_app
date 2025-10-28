@@ -157,12 +157,14 @@ class UserAdCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   
-                  // Category + Price row
+                  // Category on left + Price on right row
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Category (expands as needed)
-                      Expanded(
+                      // Category on the left edge
+                      Flexible(
+                        flex: 1,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -187,25 +189,50 @@ class UserAdCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      // Price (prominent, no overflow)
+                      const SizedBox(width: 8),
+                      // Price + Currency on the right edge (with max width constraint)
                       Flexible(
-                        fit: FlexFit.loose,
-                        child: Text(
-                          '${_formatPrice(ad.price)} ${ad.currencyName}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.left,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
+                        flex: 1,
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Currency (kept fully visible)
+                              Text(
+                                ad.currencyName,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.primaryColor,
+                                  height: 1.0,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              // Price number (truncates if too long)
+                              Flexible(
+                                child: Text(
+                                  _formatPrice(ad.price),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.left,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryColor,
+                                    height: 1.0,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   
                   const Spacer(),
                   
@@ -215,7 +242,7 @@ class UserAdCard extends StatelessWidget {
                     thickness: 0.5,
                     color: Theme.of(context).dividerColor,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   
                   // Time info (first line)
                   Row(
@@ -239,7 +266,7 @@ class UserAdCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   // Location info (second line)
                   Row(
                     children: [
