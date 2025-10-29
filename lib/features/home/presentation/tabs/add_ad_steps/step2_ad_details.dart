@@ -53,6 +53,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            filled: false,
           ),
           onChanged: (value) => widget.onDataChanged('adTitle', value),
         ),
@@ -70,6 +71,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
+                  filled: false,
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
@@ -90,6 +92,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
+                  filled: false,
                 ),
                 items: const [
                   // TODO: Load from API
@@ -115,6 +118,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            filled: false,
           ),
           items: const [
             // TODO: Load from API
@@ -136,6 +140,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            filled: false,
           ),
           items: const [
             // TODO: Load based on city
@@ -198,6 +203,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            filled: false,
             alignLabelWithHint: true,
           ),
           maxLines: 4,

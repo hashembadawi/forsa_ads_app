@@ -23,6 +23,7 @@ class Step1CategoryOptions extends StatelessWidget {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            filled: false,
           ),
           items: const [
             // TODO: Load from API
@@ -45,6 +46,7 @@ class Step1CategoryOptions extends StatelessWidget {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            filled: false,
           ),
           items: const [
             // TODO: Load based on category

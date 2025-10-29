@@ -190,6 +190,7 @@ class _EditAdScreenState extends State<EditAdScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
+                        filled: false,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -215,6 +216,7 @@ class _EditAdScreenState extends State<EditAdScreen> {
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
+                              filled: false,
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
@@ -246,6 +248,7 @@ class _EditAdScreenState extends State<EditAdScreen> {
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
+                              filled: false,
                             ),
                             items: _currencies
                                 .map((c) => DropdownMenuItem<int>(
@@ -278,6 +281,7 @@ class _EditAdScreenState extends State<EditAdScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
+                        filled: false,
                       ),
                       maxLines: 4,
                     ),

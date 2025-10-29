@@ -215,6 +215,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                         onPressed: details.onStepContinue,
                         fullWidth: true,
                         size: AppButtonSize.large,
+                        variant: AppButtonVariant.filled,
                       ),
                     ),
                     if (_currentStep > 0) ...[
