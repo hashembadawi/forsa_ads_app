@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:shimmer/shimmer.dart';
 import '../../data/models/user_ad.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/router/app_router.dart';
@@ -69,13 +70,7 @@ class UserAdCard extends ConsumerWidget {
         return _buildPlaceholder();
       }
 
-      return Image.memory(
-        imageBytes,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholder();
-        },
-      );
+      return _ImageWithShimmer(imageBytes: imageBytes);
     } catch (e) {
       return _buildPlaceholder();
     }
@@ -367,5 +362,74 @@ extension on UserAdCard {
         Notifications.showError(context, 'فشل تحميل الخيارات. يرجى المحاولة لاحقاً');
       }
     }
+  }
+}
+
+// Shimmer loading widget for images
+class _ImageWithShimmer extends StatefulWidget {
+  final Uint8List imageBytes;
+
+  const _ImageWithShimmer({required this.imageBytes});
+
+  @override
+  State<_ImageWithShimmer> createState() => _ImageWithShimmerState();
+}
+
+class _ImageWithShimmerState extends State<_ImageWithShimmer> {
+  bool _isLoading = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Shimmer effect while loading
+        if (_isLoading)
+          Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              color: Colors.grey[300],
+            ),
+          ),
+        // Actual image with fade in animation
+        Image.memory(
+          widget.imageBytes,
+          fit: BoxFit.cover,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _isLoading = false);
+              });
+              return child;
+            }
+            if (frame != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _isLoading = false);
+              });
+              return AnimatedOpacity(
+                opacity: _isLoading ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeIn,
+                child: child,
+              );
+            }
+            return const SizedBox.shrink();
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey[300],
+              child: const Center(
+                child: Icon(
+                  Icons.image_outlined,
+                  size: 48,
+                  color: Colors.grey,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }

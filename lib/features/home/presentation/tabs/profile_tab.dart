@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:shimmer/shimmer.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/strings.dart';
 import '../../../../core/router/app_router.dart';
@@ -11,6 +12,7 @@ import '../../../../core/ui/notifications.dart';
 import '../../../../shared/providers/app_state_provider.dart';
 import '../../../../core/utils/network_utils.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'edit_profile_screen.dart';
 import 'help_screen.dart'; // استيراد شاشة المساعدة الجديدة
 
@@ -392,24 +394,11 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                             ),
                           ],
                         ),
-                        child: CircleAvatar(
+                        child: _ProfileImageWithShimmer(
                           radius: 30,
+                          imageBase64: appState.isUserLoggedIn ? _profileImageBase64 : null,
                           backgroundColor: Theme.of(context).colorScheme.primary,
-                          // عرض الصورة فقط إذا كان المستخدم مسجل ولديه صورة
-                          backgroundImage: appState.isUserLoggedIn && 
-                                          _profileImageBase64 != null && 
-                                          _profileImageBase64!.isNotEmpty
-                              ? MemoryImage(base64Decode(_profileImageBase64!))
-                              : null,
-                          child: !appState.isUserLoggedIn || 
-                                 _profileImageBase64 == null || 
-                                 _profileImageBase64!.isEmpty
-                              ? Icon(
-                                  Icons.person_rounded,
-                                  size: 32,
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                )
-                              : null,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         ),
                       ),
                       // أيقونة التعديل
@@ -680,6 +669,141 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// Shimmer loading widget for profile image
+class _ProfileImageWithShimmer extends StatefulWidget {
+  final double radius;
+  final String? imageBase64;
+  final Color backgroundColor;
+  final Color foregroundColor;
+
+  const _ProfileImageWithShimmer({
+    required this.radius,
+    this.imageBase64,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+
+  @override
+  State<_ProfileImageWithShimmer> createState() => _ProfileImageWithShimmerState();
+}
+
+class _ProfileImageWithShimmerState extends State<_ProfileImageWithShimmer> {
+  bool _isLoading = true;
+  Uint8List? _imageBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _decodeImage();
+  }
+
+  @override
+  void didUpdateWidget(_ProfileImageWithShimmer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageBase64 != widget.imageBase64) {
+      _decodeImage();
+    }
+  }
+
+  void _decodeImage() {
+    if (widget.imageBase64 == null || widget.imageBase64!.isEmpty) {
+      setState(() {
+        _imageBytes = null;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      setState(() => _isLoading = true);
+      final bytes = base64Decode(widget.imageBase64!);
+      setState(() {
+        _imageBytes = bytes;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _imageBytes = null;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // No image - show icon
+    if (_imageBytes == null) {
+      return CircleAvatar(
+        radius: widget.radius,
+        backgroundColor: widget.backgroundColor,
+        child: Icon(
+          Icons.person_rounded,
+          size: widget.radius * 1.1,
+          color: widget.foregroundColor,
+        ),
+      );
+    }
+
+    // Image with shimmer effect
+    return ClipOval(
+      child: SizedBox(
+        width: widget.radius * 2,
+        height: widget.radius * 2,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Shimmer effect while loading
+            if (_isLoading)
+              Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  color: Colors.grey[300],
+                ),
+              ),
+            // Actual image with fade in
+            Image.memory(
+              _imageBytes!,
+              fit: BoxFit.cover,
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                if (wasSynchronouslyLoaded) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _isLoading = false);
+                  });
+                  return child;
+                }
+                if (frame != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _isLoading = false);
+                  });
+                  return AnimatedOpacity(
+                    opacity: _isLoading ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeIn,
+                    child: child,
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return CircleAvatar(
+                  radius: widget.radius,
+                  backgroundColor: widget.backgroundColor,
+                  child: Icon(
+                    Icons.person_rounded,
+                    size: widget.radius * 1.1,
+                    color: widget.foregroundColor,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
