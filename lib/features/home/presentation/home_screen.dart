@@ -136,9 +136,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: selected ? 34 : 28, color: selected ? AppTheme.primaryColor : AppTheme.iconInactiveColor),
+            Icon(icon, size: 34, color: selected ? AppTheme.primaryColor : Colors.black),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: selected ? 12 : 11, color: selected ? AppTheme.primaryColor : AppTheme.iconInactiveColor)),
+            Text(label, style: TextStyle(fontSize: selected ? 12 : 11, color: selected ? AppTheme.primaryColor : Colors.black87)),
           ],
         ),
       ),
