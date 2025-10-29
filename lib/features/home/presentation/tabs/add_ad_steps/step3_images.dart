@@ -172,11 +172,13 @@ class _Step3ImagesState extends State<Step3Images> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Thumbnail
-        _buildImageContainer(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Thumbnail
+          _buildImageContainer(
           base64Image: _thumbnail,
           onTap: _pickThumbnail,
           isThumbnail: true,
@@ -259,6 +261,7 @@ class _Step3ImagesState extends State<Step3Images> {
           ),
         ),
       ],
+    ),
     );
   }
 }

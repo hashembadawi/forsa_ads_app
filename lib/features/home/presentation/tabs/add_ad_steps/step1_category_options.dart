@@ -12,18 +12,19 @@ class Step1CategoryOptions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Category Selection
-        DropdownButtonFormField<int>(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Category Selection
+          DropdownButtonFormField<int>(
           value: adData['categoryId'],
           decoration: const InputDecoration(
             labelText: 'التصنيف الرئيسي',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
-            filled: false,
           ),
           items: const [
             // TODO: Load from API
@@ -46,7 +47,6 @@ class Step1CategoryOptions extends StatelessWidget {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
-            filled: false,
           ),
           items: const [
             // TODO: Load based on category
@@ -78,6 +78,7 @@ class Step1CategoryOptions extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
         ),
       ],
+    ),
     );
   }
 }
