@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/providers/app_state_provider.dart';
 import '../../../core/constants/strings.dart';
 import '../../../core/ui/notifications.dart';
+import '../../../core/utils/network_utils.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/favorites_tab.dart';
 import 'tabs/add_ad_tab.dart';
@@ -74,6 +75,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }
               return;
             }
+            // Ensure internet connection before proceeding to Add Ad flow
+            final connected = await NetworkUtils.ensureConnected(context);
+            if (!connected) return;
             setState(() => _selectedIndex = 2);
           },
           shape: const CircleBorder(),

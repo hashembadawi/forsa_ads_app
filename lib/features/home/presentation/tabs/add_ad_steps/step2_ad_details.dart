@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../../shared/widgets/app_button.dart';
+import '../../../data/models/app_options.dart';
 
 class Step2AdDetails extends StatefulWidget {
   final Map<String, dynamic> adData;
+  final AppOptions options;
   final Function(String key, dynamic value) onDataChanged;
 
   const Step2AdDetails({
     super.key,
     required this.adData,
+    required this.options,
     required this.onDataChanged,
   });
 
@@ -43,6 +46,12 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
 
   @override
   Widget build(BuildContext context) {
+      // Filter major areas based on selected province
+      final selectedProvinceId = widget.adData['cityId'];
+      final filteredMajorAreas = selectedProvinceId != null
+          ? widget.options.majorAreas.where((area) => area.provinceId == selectedProvinceId).toList()
+          : <dynamic>[];
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -94,15 +103,33 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
-                items: const [
-                  // TODO: Load from API
-                  DropdownMenuItem(value: 1, child: Text('USD')),
-                  DropdownMenuItem(value: 2, child: Text('EUR')),
-                  DropdownMenuItem(value: 3, child: Text('TRY')),
-                ],
+                isExpanded: true,
+                selectedItemBuilder: (context) {
+                  return widget.options.currencies.map((currency) {
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        currency.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList();
+                },
+                  items: widget.options.currencies.map((currency) {
+                    return DropdownMenuItem<int>(
+                      value: currency.id,
+                    child: Text(
+                      currency.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    );
+                  }).toList(),
                 onChanged: (value) {
+                    final selectedCurrency = widget.options.currencies.firstWhere((curr) => curr.id == value);
                   widget.onDataChanged('currencyId', value);
-                  widget.onDataChanged('currencyName', 'USD'); // TODO
+                    widget.onDataChanged('currencyName', selectedCurrency.name);
                 },
               ),
             ),
@@ -119,14 +146,19 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
           ),
-          items: const [
-            // TODO: Load from API
-            DropdownMenuItem(value: 1, child: Text('دمشق')),
-            DropdownMenuItem(value: 2, child: Text('حلب')),
-          ],
+            items: widget.options.provinces.map((province) {
+              return DropdownMenuItem<int>(
+                value: province.id,
+                child: Text(province.name),
+              );
+            }).toList(),
           onChanged: (value) {
+              final selectedProvince = widget.options.provinces.firstWhere((prov) => prov.id == value);
             widget.onDataChanged('cityId', value);
-            widget.onDataChanged('cityName', 'دمشق'); // TODO
+              widget.onDataChanged('cityName', selectedProvince.name);
+              // Reset region when province changes
+              widget.onDataChanged('regionId', null);
+              widget.onDataChanged('regionName', null);
           },
         ),
         const SizedBox(height: 12),
@@ -134,20 +166,25 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
         // Region Selection
         DropdownButtonFormField<int>(
           value: widget.adData['regionId'],
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'المنطقة',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+              hintText: selectedProvinceId == null ? 'اختر المحافظة أولاً' : 'اختر المنطقة',
           ),
-          items: const [
-            // TODO: Load based on city
-            DropdownMenuItem(value: 1, child: Text('المزة')),
-            DropdownMenuItem(value: 2, child: Text('أبو رمانة')),
-          ],
-          onChanged: (value) {
-            widget.onDataChanged('regionId', value);
-            widget.onDataChanged('regionName', 'المزة'); // TODO
+            items: filteredMajorAreas.map((area) {
+              return DropdownMenuItem<int>(
+                value: area.id,
+                child: Text(area.name),
+              );
+            }).toList(),
+          onChanged: selectedProvinceId == null ? null : (value) {
+              if (value != null) {
+                final selectedArea = filteredMajorAreas.firstWhere((area) => area.id == value);
+                widget.onDataChanged('regionId', value);
+                widget.onDataChanged('regionName', selectedArea.name);
+              }
           },
         ),
         const SizedBox(height: 12),
@@ -202,4 +239,5 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
     ),
     );
   }
+
 }

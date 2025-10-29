@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../core/ui/notifications.dart';
+import '../../data/models/app_options.dart';
 import '../tabs/add_ad_steps/step1_category_options.dart';
 import '../tabs/add_ad_steps/step2_ad_details.dart';
 import '../tabs/add_ad_steps/step3_images.dart';
 
 class AddAdScreen extends ConsumerStatefulWidget {
-  const AddAdScreen({super.key});
+  final AppOptions options;
+  
+  const AddAdScreen({super.key, required this.options});
 
   @override
   ConsumerState<AddAdScreen> createState() => _AddAdScreenState();
@@ -72,8 +75,8 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
       Notifications.showSnack(
         context,
         _getValidationMessage(),
-        type: NotificationType.warning,
-        icon: Icons.warning,
+        type: NotificationType.info,
+        icon: Icons.info,
       );
       return;
     }
@@ -231,6 +234,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                 title: const Text('التصنيف والخيارات'),
                 content: Step1CategoryOptions(
                   adData: _adData,
+                    options: widget.options,
                   onDataChanged: (key, value) {
                     setState(() => _adData[key] = value);
                   },
@@ -242,6 +246,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                 title: const Text('معلومات الإعلان'),
                 content: Step2AdDetails(
                   adData: _adData,
+                    options: widget.options,
                   onDataChanged: (key, value) {
                     setState(() => _adData[key] = value);
                   },

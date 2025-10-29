@@ -57,36 +57,57 @@ class _Step3ImagesState extends State<Step3Images> {
     }
   }
 
-  Future<void> _pickAdditionalImage() async {
-    if (_images.length >= 5) {
+  Future<void> _pickAdditionalImages() async {
+    final remainingSlots = 5 - _images.length;
+    
+    if (remainingSlots <= 0) {
       Notifications.showSnack(
         context,
         'الحد الأقصى 5 صور إضافية',
-        type: NotificationType.warning,
-        icon: Icons.warning,
+        type: NotificationType.info,
+        icon: Icons.info,
       );
       return;
     }
 
     try {
-      final XFile? file = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
+      final List<XFile> files = await _imagePicker.pickMultiImage(
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
       
-      if (file != null) {
+      if (files.isEmpty) return;
+      
+      // Take only the remaining available slots
+      final filesToProcess = files.take(remainingSlots).toList();
+      
+      // Show warning if user selected more than allowed
+      if (files.length > remainingSlots) {
+        Notifications.showSnack(
+          context,
+          'تم اختيار ${filesToProcess.length} صور فقط (الحد الأقصى $remainingSlots)',
+          type: NotificationType.info,
+          icon: Icons.info,
+        );
+      }
+      
+      // Process selected images
+      final List<String> newImages = [];
+      for (final file in filesToProcess) {
         final bytes = await file.readAsBytes();
         final base64Image = base64Encode(bytes);
-        setState(() => _images.add(base64Image));
-        widget.onDataChanged('images', _images);
+        newImages.add(base64Image);
       }
+      
+      setState(() => _images.addAll(newImages));
+      widget.onDataChanged('images', _images);
+      
     } catch (e) {
       if (mounted) {
         Notifications.showSnack(
           context,
-          'فشل اختيار الصورة',
+          'فشل اختيار الصور',
           type: NotificationType.error,
           icon: Icons.error,
         );
@@ -108,11 +129,14 @@ class _Step3ImagesState extends State<Step3Images> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: isThumbnail ? 200 : 120,
+        height: isThumbnail ? 180 : null,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!, width: 2),
+          border: Border.all(
+            color: base64Image != null ? Colors.grey[400]! : Colors.grey[300]!,
+            width: base64Image != null ? 2 : 1.5,
+          ),
           borderRadius: BorderRadius.circular(12),
-          color: Colors.grey[100],
+          color: base64Image != null ? Colors.white : Colors.grey[50],
         ),
         child: Stack(
           fit: StackFit.expand,
@@ -130,36 +154,44 @@ class _Step3ImagesState extends State<Step3Images> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.add_photo_alternate_outlined,
-                    size: isThumbnail ? 64 : 48,
+                    isThumbnail ? Icons.add_photo_alternate_outlined : Icons.add_a_photo_outlined,
+                    size: isThumbnail ? 48 : 36,
                     color: AppTheme.iconInactiveColor,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
-                    isThumbnail ? 'الصورة الرئيسية *' : 'إضافة صورة',
+                    isThumbnail ? 'اختر الصورة' : 'إضافة',
                     style: TextStyle(
                       color: AppTheme.iconInactiveColor,
-                      fontSize: isThumbnail ? 16 : 14,
+                      fontSize: isThumbnail ? 14 : 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             if (base64Image != null && onRemove != null)
               Positioned(
-                top: 8,
-                right: 8,
+                top: 6,
+                right: 6,
                 child: GestureDetector(
                   onTap: onRemove,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
                       color: AppTheme.errorColor,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: const Icon(
                       Icons.close,
                       color: Colors.white,
-                      size: 20,
+                      size: 16,
                     ),
                   ),
                 ),
@@ -177,91 +209,127 @@ class _Step3ImagesState extends State<Step3Images> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Thumbnail
+          // Thumbnail Section
+          Text(
+            'الصورة الرئيسية *',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 8),
           _buildImageContainer(
-          base64Image: _thumbnail,
-          onTap: _pickThumbnail,
-          isThumbnail: true,
-        ),
-        const SizedBox(height: 16),
-
-        // Additional Images Header with Counter
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'صور إضافية (اختيارية)',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              '${_images.length}/5',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Grid of additional images
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1,
+            base64Image: _thumbnail,
+            onTap: _pickThumbnail,
+            isThumbnail: true,
           ),
-          itemCount: _images.length + (_images.length < 5 ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index < _images.length) {
-              // Show existing image
-              return _buildImageContainer(
-                base64Image: _images[index],
-                onTap: () {},
-                onRemove: () => _removeAdditionalImage(index),
-              );
-            } else {
-              // Show add button
-              return _buildImageContainer(
-                onTap: _pickAdditionalImage,
-              );
-            }
-          },
-        ),
-        
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.blue[200]!),
-          ),
-          child: Row(
+          const SizedBox(height: 24),
+
+          // Additional Images Header with Counter
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-              const SizedBox(width: 8),
-              Expanded(
+              Text(
+                'صور إضافية (اختيارية)',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _images.length >= 5 ? Colors.red[50] : Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _images.length >= 5 ? Colors.red[200]! : Colors.blue[200]!,
+                  ),
+                ),
                 child: Text(
-                  'يمكنك إضافة حتى 6 صور (صورة رئيسية + 5 صور إضافية)',
+                  '${_images.length}/5',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue[700],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _images.length >= 5 ? Colors.red[700] : Colors.blue[700],
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
-    ),
+          const SizedBox(height: 12),
+
+          // Grid of additional images
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1,
+            ),
+            itemCount: _images.length + (_images.length < 5 ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index < _images.length) {
+                // Show existing image
+                return _buildImageContainer(
+                  base64Image: _images[index],
+                  onTap: () {},
+                  onRemove: () => _removeAdditionalImage(index),
+                );
+              } else {
+                // Show add button
+                return _buildImageContainer(
+                  onTap: _pickAdditionalImages,
+                );
+              }
+            },
+          ),
+
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue[200]!),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[700], size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'معلومات مهمة:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '• يمكنك إضافة حتى 6 صور (صورة رئيسية + 5 صور إضافية)\n• اختر عدة صور في نفس الوقت لتوفير الوقت\n• الصورة الرئيسية إلزامية',
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.5,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

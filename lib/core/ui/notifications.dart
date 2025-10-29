@@ -36,7 +36,7 @@ class Notifications {
       case NotificationType.warning:
         return AppTheme.warningColor.withOpacity(0.1); // برتقالي فاتح
       case NotificationType.info:
-        return AppTheme.infoColor.withOpacity(0.1); // أزرق فاتح
+        return AppTheme.warningColor.withOpacity(0.1); // برتقالي فاتح
     }
   }
 
@@ -49,7 +49,7 @@ class Notifications {
       case NotificationType.warning:
         return AppTheme.warningColor; // برتقالي
       case NotificationType.info:
-        return AppTheme.infoColor; // أزرق فاتح
+        return AppTheme.warningColor; // برتقالي
     }
   }
   static const Duration _defaultDuration = Duration(seconds: 3);

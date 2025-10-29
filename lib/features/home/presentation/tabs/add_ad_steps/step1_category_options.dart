@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
+import '../../../data/models/app_options.dart';
+import '../../../data/models/sub_category.dart';
 
 class Step1CategoryOptions extends StatelessWidget {
   final Map<String, dynamic> adData;
+  final AppOptions options;
   final Function(String key, dynamic value) onDataChanged;
 
   const Step1CategoryOptions({
     super.key,
     required this.adData,
+    required this.options,
     required this.onDataChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Filter subcategories based on selected category
+    final selectedCategoryId = adData['categoryId'];
+  final List<SubCategory> filteredSubCategories = selectedCategoryId != null
+    ? options.subCategories.where((sub) => sub.categoryId == selectedCategoryId).toList()
+    : <SubCategory>[];
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -26,15 +36,19 @@ class Step1CategoryOptions extends StatelessWidget {
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
           ),
-          items: const [
-            // TODO: Load from API
-            DropdownMenuItem(value: 1, child: Text('إلكترونيات')),
-            DropdownMenuItem(value: 2, child: Text('سيارات')),
-            DropdownMenuItem(value: 3, child: Text('عقارات')),
-          ],
+          items: options.categories.map((category) {
+            return DropdownMenuItem<int>(
+              value: category.id,
+              child: Text(category.name),
+            );
+          }).toList(),
           onChanged: (value) {
+            final selectedCategory = options.categories.firstWhere((cat) => cat.id == value);
             onDataChanged('categoryId', value);
-            onDataChanged('categoryName', 'إلكترونيات'); // TODO: Get actual name
+            onDataChanged('categoryName', selectedCategory.name);
+            // Reset subcategory when category changes
+            onDataChanged('subCategoryId', null);
+            onDataChanged('subCategoryName', null);
           },
         ),
         const SizedBox(height: 12),
@@ -42,20 +56,25 @@ class Step1CategoryOptions extends StatelessWidget {
         // SubCategory Selection
         DropdownButtonFormField<int>(
           value: adData['subCategoryId'],
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'التصنيف الفرعي',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            hintText: selectedCategoryId == null ? 'اختر التصنيف الرئيسي أولاً' : 'اختر التصنيف الفرعي',
           ),
-          items: const [
-            // TODO: Load based on category
-            DropdownMenuItem(value: 1, child: Text('هواتف')),
-            DropdownMenuItem(value: 2, child: Text('أجهزة كمبيوتر')),
-          ],
-          onChanged: (value) {
-            onDataChanged('subCategoryId', value);
-            onDataChanged('subCategoryName', 'هواتف'); // TODO: Get actual name
+          items: filteredSubCategories.map((subCategory) {
+            return DropdownMenuItem<int>(
+              value: subCategory.id,
+              child: Text(subCategory.name),
+            );
+          }).toList(),
+          onChanged: selectedCategoryId == null ? null : (value) {
+            if (value != null) {
+              final selectedSubCategory = filteredSubCategories.firstWhere((sub) => sub.id == value);
+              onDataChanged('subCategoryId', value);
+              onDataChanged('subCategoryName', selectedSubCategory.name);
+            }
           },
         ),
         const SizedBox(height: 16),
