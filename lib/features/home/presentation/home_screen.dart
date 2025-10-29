@@ -23,10 +23,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
   
-  final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const HomeTab(),
     const FavoritesTab(),
-    const AddAdTab(),
+    AddAdTab(onNavigateToTab: (index) {
+      if (mounted) {
+        setState(() => _selectedIndex = index);
+      }
+    }),
     const MyAdsTab(),
     const ProfileTab(),
   ];
