@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../core/ui/notifications.dart';
 import '../tabs/add_ad_steps/step1_category_options.dart';
@@ -193,13 +192,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
           title: const Text('إضافة إعلان جديد'),
           elevation: 0,
         ),
-        body: Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryColor,
-            ),
-          ),
-          child: Stepper(
+        body: Stepper(
             currentStep: _currentStep,
             onStepContinue: _onStepContinue,
             onStepCancel: _onStepCancel,
@@ -268,7 +261,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                 state: _currentStep > 2 ? StepState.complete : StepState.indexed,
               ),
             ],
-          ),
         ),
       ),
     );

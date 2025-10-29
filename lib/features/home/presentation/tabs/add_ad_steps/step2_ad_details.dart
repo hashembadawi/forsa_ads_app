@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../../shared/widgets/app_button.dart';
 
 class Step2AdDetails extends StatefulWidget {
   final Map<String, dynamic> adData;
@@ -158,37 +159,29 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
+              child: AppButton.outlined(
+                text: 'الموقع الحالي',
+                icon: Icons.my_location,
                 onPressed: () {
                   // TODO: Get current location
                   widget.onDataChanged('location', {
                     'coordinates': [33.5138, 36.2765] // Example coordinates
                   });
                 },
-                icon: const Icon(Icons.my_location),
-                label: const Text('الموقع الحالي'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                size: AppButtonSize.large,
+                fullWidth: true,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: OutlinedButton.icon(
+              child: AppButton.outlined(
+                text: 'من الخريطة',
+                icon: Icons.map,
                 onPressed: () {
                   // TODO: Open map picker
                 },
-                icon: const Icon(Icons.map),
-                label: const Text('من الخريطة'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                size: AppButtonSize.large,
+                fullWidth: true,
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/strings.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/app_button.dart';
 import '../providers/user_ads_provider.dart';
 import '../widgets/user_ad_card.dart';
 import '../widgets/ad_card_shimmer.dart';
@@ -152,15 +153,13 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            AppButton(
+              text: 'إعادة المحاولة',
+              icon: Icons.refresh,
               onPressed: () {
                 ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
               },
-              icon: const Icon(Icons.refresh),
-              label: const Text('إعادة المحاولة'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
+              size: AppButtonSize.large,
             ),
           ],
         ),
@@ -188,11 +187,12 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            AppButton(
+              text: 'إعادة المحاولة',
               onPressed: () {
                 ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
               },
-              child: const Text('إعادة المحاولة'),
+              size: AppButtonSize.large,
             ),
           ],
         ),
@@ -228,12 +228,13 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
             const SizedBox(height: 16),
             const Text(AppStrings.myAdsEmpty),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
+            AppButton(
+              text: 'أضف أول إعلان',
+              icon: Icons.add,
               onPressed: () {
                 // Navigate to add ad screen
               },
-              icon: const Icon(Icons.add),
-              label: const Text('أضف أول إعلان'),
+              size: AppButtonSize.large,
             ),
           ],
         ),

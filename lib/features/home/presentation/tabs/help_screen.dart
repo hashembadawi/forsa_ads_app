@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../../shared/widgets/app_button.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -124,21 +125,18 @@ class HelpScreen extends StatelessWidget {
                         const SizedBox(height: 6),
                         SelectableText('905510300730', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.chat, color: Colors.white),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF25D366),
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(120, 40),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          label: const Text('تواصل واتساب'),
+                        AppButton(
+                          text: 'تواصل واتساب',
+                          icon: Icons.chat,
                           onPressed: () async {
                             final url = Uri.parse('https://wa.me/905510300730');
                             if (await canLaunchUrl(url)) {
                               await launchUrl(url, mode: LaunchMode.externalApplication);
                             }
                           },
+                          backgroundColor: const Color(0xFF25D366),
+                          textColor: Colors.white,
+                          size: AppButtonSize.medium,
                         ),
                         const SizedBox(height: 20),
                         const Text('وسائل التواصل الاجتماعي:'),
