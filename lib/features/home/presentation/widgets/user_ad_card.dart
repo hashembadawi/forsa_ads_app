@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' as intl;
 import '../../data/models/user_ad.dart';
@@ -9,8 +10,9 @@ import '../../../../core/router/app_router.dart';
 import '../../../home/data/services/options_service.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/ui/notifications.dart';
+import '../providers/user_ads_provider.dart';
 
-class UserAdCard extends StatelessWidget {
+class UserAdCard extends ConsumerWidget {
   // Recommended grid childAspectRatio for this card when used inside GridView.
   // Keeping it here centralizes sizing decisions related to the card.
   static const double kGridAspectRatio = 0.65;
@@ -93,10 +95,10 @@ class UserAdCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () {
-        _handleTap(context);
+        _handleTap(context, ref);
       },
       child: Card(
         elevation: 2,
@@ -341,17 +343,24 @@ class UserAdCard extends StatelessWidget {
 }
 
 extension on UserAdCard {
-  Future<void> _handleTap(BuildContext context) async {
+  Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
     try {
       Notifications.showLoading(context, message: 'جاري التحضير...');
       final service = OptionsService(Dio());
       final currencies = await service.fetchCurrencies();
       if (!context.mounted) return;
       Notifications.hideLoading(context);
-      context.push(AppRoutes.editAd, extra: {
+      
+      // Navigate and wait for result
+      final result = await context.push(AppRoutes.editAd, extra: {
         'ad': ad,
         'currencies': currencies,
       });
+      
+      // If edit was successful, refresh the list
+      if (result == true && context.mounted) {
+        ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
+      }
     } catch (e) {
       if (context.mounted) {
         Notifications.hideLoading(context);

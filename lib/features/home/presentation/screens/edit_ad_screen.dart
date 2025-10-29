@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/notifications.dart';
+import '../../../../shared/widgets/app_button.dart';
 
 class EditAdScreen extends StatefulWidget {
   final UserAd ad;
@@ -28,7 +29,6 @@ class _EditAdScreenState extends State<EditAdScreen> {
   bool _forSale = true;
   bool _deliveryService = false;
   late List<CurrencyOption> _currencies;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -36,9 +36,9 @@ class _EditAdScreenState extends State<EditAdScreen> {
     _titleController = TextEditingController(text: widget.ad.adTitle);
     _priceController = TextEditingController(text: widget.ad.price.toString());
   _currencyNameController = TextEditingController(text: widget.ad.currencyName);
-  _descriptionController = TextEditingController(text: '');
-  _forSale = true;
-  _deliveryService = false;
+  _descriptionController = TextEditingController(text: widget.ad.description);
+    _forSale = widget.ad.forSale;
+    _deliveryService = widget.ad.deliveryService;
 
     _currencies = widget.currencies
         .map((e) => e is CurrencyOption ? e : CurrencyOption.fromJson(e as Map<String, dynamic>))
@@ -73,13 +73,24 @@ class _EditAdScreenState extends State<EditAdScreen> {
   }
 
   Future<void> _deleteAd() async {
-    setState(() => _isLoading = true);
+    Notifications.showLoading(context, message: 'جاري حذف الإعلان...');
 
     try {
-      // TODO: Implement delete API call
-      // await ref.read(userAdsServiceProvider).deleteAd(widget.ad.id);
-      
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('user_token');
+      if (token == null) {
+        if (mounted) {
+          Notifications.hideLoading(context);
+          Notifications.showError(context, 'انتهت الجلسة، يرجى تسجيل الدخول');
+        }
+        return;
+      }
+
+      final service = UserAdsService(Dio());
+      await service.deleteAd(adId: widget.ad.id, token: token);
+
       if (mounted) {
+        Notifications.hideLoading(context);
         Navigator.of(context).pop(true); // Return true to indicate deletion
         Notifications.showSnack(
           context,
@@ -90,6 +101,7 @@ class _EditAdScreenState extends State<EditAdScreen> {
       }
     } catch (e) {
       if (mounted) {
+        Notifications.hideLoading(context);
         Notifications.showSnack(
           context,
           'حدث خطأ أثناء حذف الإعلان',
@@ -97,23 +109,20 @@ class _EditAdScreenState extends State<EditAdScreen> {
           icon: Icons.error,
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
     }
   }
 
   Future<void> _updateAd() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    Notifications.showLoading(context, message: 'جاري تعديل الإعلان...');
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('user_token');
       if (token == null) {
         if (mounted) {
+          Notifications.hideLoading(context);
           Notifications.showError(context, 'انتهت الجلسة، يرجى تسجيل الدخول');
         }
         return;
@@ -137,6 +146,7 @@ class _EditAdScreenState extends State<EditAdScreen> {
       
       
       if (mounted) {
+        Notifications.hideLoading(context);
         Navigator.of(context).pop(true); // Return true to indicate update
         Notifications.showSnack(
           context,
@@ -147,16 +157,13 @@ class _EditAdScreenState extends State<EditAdScreen> {
       }
     } catch (e) {
       if (mounted) {
+        Notifications.hideLoading(context);
         Notifications.showSnack(
           context,
           'حدث خطأ أثناء تعديل الإعلان',
           type: NotificationType.error,
           icon: Icons.error,
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
       }
     }
   }
@@ -168,100 +175,22 @@ class _EditAdScreenState extends State<EditAdScreen> {
         title: const Text('تعديل الإعلان'),
         elevation: 0,
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryColor,
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Ad info card
-                    Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.info_outline,
-                                  size: 20,
-                                  color: AppTheme.primaryColor,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'معلومات الإعلان',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _buildInfoRow('التصنيف', widget.ad.categoryName),
-                            const SizedBox(height: 8),
-                            _buildInfoRow('الموقع', widget.ad.cityName),
-                            const SizedBox(height: 8),
-                            _buildInfoRow(
-                              'الحالة',
-                              widget.ad.isApproved ? 'تمت الموافقة' : 'قيد المراجعة',
-                              valueColor: widget.ad.isApproved
-                                  ? Colors.green
-                                  : AppTheme.warningColor,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
                     // Title field
-                    Text(
-                      'عنوان الإعلان',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _titleController,
-                      decoration: InputDecoration(
-                        hintText: 'أدخل عنوان الإعلان',
-                        prefixIcon: const Icon(Icons.title, size: 20),
+                      decoration: const InputDecoration(
+                        labelText: 'عنوان الإعلان',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Theme.of(context).dividerColor,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppTheme.primaryColor,
-                            width: 2,
-                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                       ),
-                      maxLines: 2,
-                      maxLength: 100,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'يرجى إدخال عنوان الإعلان';
@@ -272,161 +201,88 @@ class _EditAdScreenState extends State<EditAdScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
-                    // Price and currency row
+                    // Price and Currency in one row
                     Row(
                       children: [
-                        // Price field
                         Expanded(
                           flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'السعر',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
+                          child: TextFormField(
+                            controller: _priceController,
+                            decoration: const InputDecoration(
+                              labelText: 'السعر',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
-                              const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _priceController,
-                                decoration: InputDecoration(
-                                  hintText: '0.00',
-                                  prefixIcon: const Icon(
-                                    Icons.attach_money,
-                                    size: 20,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).dividerColor,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: AppTheme.primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                                keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'^\d*\.?\d*'),
-                                  ),
-                                ],
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'يرجى إدخال السعر';
-                                  }
-                                  final price = double.tryParse(value);
-                                  if (price == null || price <= 0) {
-                                    return 'السعر غير صحيح';
-                                  }
-                                  return null;
-                                },
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'),
                               ),
                             ],
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'يرجى إدخال السعر';
+                              }
+                              final price = double.tryParse(value);
+                              if (price == null || price <= 0) {
+                                return 'السعر غير صحيح';
+                              }
+                              return null;
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Currency field (Dropdown)
                         Expanded(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'العملة',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
+                          child: DropdownButtonFormField<int>(
+                            value: _currencyId,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'العملة',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<int>(
-                                value: _currencyId,
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                ),
-                                items: _currencies
-                                    .map((c) => DropdownMenuItem<int>(
-                                          value: c.id,
-                                          child: Text(c.name),
-                                        ))
-                                    .toList(),
-                                onChanged: (val) {
-                                  setState(() {
-                                    _currencyId = val;
-                                    final selected = _currencies.firstWhere((c) => c.id == val, orElse: () => _currencies.first);
-                                    _currencyNameController.text = selected.name;
-                                  });
-                                },
-                                validator: (val) {
-                                  if (val == null) return 'اختر العملة';
-                                  return null;
-                                },
-                              ),
-                            ],
+                            ),
+                            items: _currencies
+                                .map((c) => DropdownMenuItem<int>(
+                                      value: c.id,
+                                      child: Text(c.name),
+                                    ))
+                                .toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                _currencyId = val;
+                                final selected = _currencies.firstWhere((c) => c.id == val, orElse: () => _currencies.first);
+                                _currencyNameController.text = selected.name;
+                              });
+                            },
+                            validator: (val) {
+                              if (val == null) return 'اختر العملة';
+                              return null;
+                            },
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
                     // Description field
-                    Text(
-                      'الوصف',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _descriptionController,
-                      decoration: InputDecoration(
-                        hintText: 'أدخل وصف الإعلان',
+                      decoration: const InputDecoration(
+                        labelText: 'الوصف',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                        ),
-                        focusedBorder: const OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
-                          borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
                         ),
                       ),
                       maxLines: 4,
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     // Switches
                     SwitchListTile(
@@ -441,93 +297,29 @@ class _EditAdScreenState extends State<EditAdScreen> {
                       onChanged: (v) => setState(() => _deliveryService = v),
                       contentPadding: EdgeInsets.zero,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
 
                     // Update button
-                    ElevatedButton(
+                    AppButton(
+                      text: 'تعديل الإعلان',
                       onPressed: _updateAd,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.edit, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'تعديل الإعلان',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                      fullWidth: true,
+                      size: AppButtonSize.large,
                     ),
                     const SizedBox(height: 12),
 
                     // Delete button
-                    OutlinedButton(
+                    AppButton.outlined(
+                      text: 'حذف الإعلان',
                       onPressed: _showDeleteConfirmation,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.errorColor,
-                        side: const BorderSide(
-                          color: AppTheme.errorColor,
-                          width: 1.5,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.delete_outline, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'حذف الإعلان',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                      fullWidth: true,
+                      size: AppButtonSize.large,
+                      textColor: AppTheme.errorColor,
                     ),
                   ],
                 ),
               ),
-            ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: valueColor ?? Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

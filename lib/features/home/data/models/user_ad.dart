@@ -9,6 +9,9 @@ class UserAd {
   final String cityName;
   final String? regionName;
   final bool isApproved;
+  final String description;
+  final bool forSale;
+  final bool deliveryService;
 
   UserAd({
     required this.id,
@@ -21,6 +24,9 @@ class UserAd {
     required this.cityName,
     this.regionName,
     required this.isApproved,
+    this.description = '',
+    this.forSale = true,
+    this.deliveryService = false,
   });
 
   factory UserAd.fromJson(Map<String, dynamic> json) {
@@ -37,6 +43,9 @@ class UserAd {
       cityName: json['cityName'] ?? '',
       regionName: json['regionName'],
       isApproved: json['isApproved'] ?? false,
+      description: json['description'] ?? '',
+      forSale: json['forSale'] ?? true,
+      deliveryService: json['deliveryService'] ?? false,
     );
   }
 }
