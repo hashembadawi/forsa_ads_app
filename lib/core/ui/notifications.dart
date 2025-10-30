@@ -30,13 +30,13 @@ class Notifications {
   static Color _backgroundColorForType(NotificationType type, {required BuildContext ctx}) {
     switch (type) {
       case NotificationType.success:
-        return AppTheme.successColor.withOpacity(0.1); // أخضر فاتح
+        return AppTheme.successColor.withValues(alpha: 0.1); // أخضر فاتح
       case NotificationType.error:
-        return AppTheme.errorColor.withOpacity(0.1); // أحمر فاتح
+        return AppTheme.errorColor.withValues(alpha: 0.1); // أحمر فاتح
       case NotificationType.warning:
-        return AppTheme.warningColor.withOpacity(0.1); // برتقالي فاتح
+        return AppTheme.warningColor.withValues(alpha: 0.1); // برتقالي فاتح
       case NotificationType.info:
-        return AppTheme.warningColor.withOpacity(0.1); // برتقالي فاتح
+        return AppTheme.warningColor.withValues(alpha: 0.1); // برتقالي فاتح
     }
   }
 
@@ -95,7 +95,7 @@ class Notifications {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(colors: [AppTheme.primaryColor.withOpacity(0.9), AppTheme.primaryDarkColor.withOpacity(0.9)]),
+                          gradient: LinearGradient(colors: [AppTheme.primaryColor.withValues(alpha: 0.9), AppTheme.primaryDarkColor.withValues(alpha: 0.9)]),
                         ),
                         child: const Padding(
                           padding: EdgeInsets.all(8.0),

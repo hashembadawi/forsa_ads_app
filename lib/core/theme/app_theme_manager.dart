@@ -63,11 +63,21 @@ class AppThemeManager {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        filled: true,
+        filled: false,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
         ),
+      ),
+      // انتقالات الصفحات موحّدة
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+        },
       ),
       
       // صفحات التمرير
@@ -132,11 +142,21 @@ class AppThemeManager {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        filled: true,
+        filled: false,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
         ),
+      ),
+      // انتقالات الصفحات موحّدة
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+        },
       ),
       
       // صفحات التمرير
