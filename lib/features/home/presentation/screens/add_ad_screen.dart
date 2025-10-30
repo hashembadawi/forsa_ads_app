@@ -172,7 +172,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
         'thumbnail': _adData['thumbnail'] ?? '',
         'images': _adData['images'] ?? [],
         'description': _adData['description'],
-        'isSpecial': false,
+        'isSpecial': appState.isSpecial,
         'forSale': _adData['forSale'] ?? true,
         'deliveryService': _adData['deliveryService'] ?? false,
       };

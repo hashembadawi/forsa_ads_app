@@ -17,11 +17,25 @@ class AppLogger {
 
   // إعدادات التسجيل
   static const bool _enableLogging = kDebugMode;
+  // في وضع التطوير، قم بكتم معظم رسائل debug/info والإبقاء فقط على الرسائل الضرورية
+  static const bool _suppressNonEssentialLogs = true;
+  // السماح فقط بهذه الرسائل بالظهور عند كتم معظم الرسائل
+  static const List<String> _allowedInfoMessages = <String>[
+    'الجلسة صالحة 200',
+  ];
   static const bool _enableFileLogging = false; // يمكن تفعيلها في المستقبل
 
   /// تسجيل رسالة عامة
   void log(String message, {LogLevel level = LogLevel.info, String? tag}) {
     if (!_enableLogging) return;
+
+    // كتم معظم رسائل debug/info مع السماح بقائمة بيضاء من الرسائل
+    if (_suppressNonEssentialLogs && (level == LogLevel.debug || level == LogLevel.info)) {
+      final allowed = _allowedInfoMessages.any((m) => message.contains(m));
+      if (!allowed) {
+        return;
+      }
+    }
 
     final timestamp = DateTime.now().toIso8601String();
     final emoji = _getLogEmoji(level);

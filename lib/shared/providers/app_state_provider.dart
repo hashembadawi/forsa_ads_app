@@ -11,6 +11,11 @@ class AppState {
   final String? userPhone;
   final String? userFirstName;
   final String? userLastName;
+  final String? profileImage;
+  final String? accountNumber;
+  final bool isVerified;
+  final bool isAdmin;
+  final bool isSpecial;
 
   AppState({
     required this.isFirstTime,
@@ -20,6 +25,11 @@ class AppState {
     this.userPhone,
     this.userFirstName,
     this.userLastName,
+    this.profileImage,
+    this.accountNumber,
+    this.isVerified = false,
+    this.isAdmin = false,
+    this.isSpecial = false,
   });
 
   AppState copyWith({
@@ -30,6 +40,11 @@ class AppState {
     String? userPhone,
     String? userFirstName,
     String? userLastName,
+    String? profileImage,
+    String? accountNumber,
+    bool? isVerified,
+    bool? isAdmin,
+    bool? isSpecial,
   }) {
     return AppState(
       isFirstTime: isFirstTime ?? this.isFirstTime,
@@ -39,6 +54,11 @@ class AppState {
       userPhone: userPhone ?? this.userPhone,
       userFirstName: userFirstName ?? this.userFirstName,
       userLastName: userLastName ?? this.userLastName,
+      profileImage: profileImage ?? this.profileImage,
+      accountNumber: accountNumber ?? this.accountNumber,
+      isVerified: isVerified ?? this.isVerified,
+      isAdmin: isAdmin ?? this.isAdmin,
+      isSpecial: isSpecial ?? this.isSpecial,
     );
   }
 }
@@ -52,6 +72,11 @@ class _StorageKeys {
   static const String userPhone = 'user_phone';
   static const String userFirstName = 'userFirstName';
   static const String userLastName = 'userLastName';
+  static const String profileImage = 'userProfileImage';
+  static const String accountNumber = 'userAccountNumber';
+  static const String isVerified = 'userIsVerified';
+  static const String isAdmin = 'userIsAdmin';
+  static const String isSpecial = 'userIsSpecial';
 }
 
 // App State Notifier
@@ -80,8 +105,13 @@ class AppStateNotifier extends StateNotifier<AppState> {
       final isGuest = prefs.getBool(_StorageKeys.isGuest) ?? false;
       final userToken = prefs.getString(_StorageKeys.userToken);
       final userPhone = prefs.getString(_StorageKeys.userPhone);
-  final userFirstName = prefs.getString(_StorageKeys.userFirstName);
-  final userLastName = prefs.getString(_StorageKeys.userLastName);
+      final userFirstName = prefs.getString(_StorageKeys.userFirstName);
+      final userLastName = prefs.getString(_StorageKeys.userLastName);
+      final profileImage = prefs.getString(_StorageKeys.profileImage);
+      final accountNumber = prefs.getString(_StorageKeys.accountNumber);
+      final isVerified = prefs.getBool(_StorageKeys.isVerified) ?? false;
+      final isAdmin = prefs.getBool(_StorageKeys.isAdmin) ?? false;
+      final isSpecial = prefs.getBool(_StorageKeys.isSpecial) ?? false;
 
       state = AppState(
         isFirstTime: isFirstTime,
@@ -91,11 +121,16 @@ class AppStateNotifier extends StateNotifier<AppState> {
         userPhone: userPhone,
         userFirstName: userFirstName,
         userLastName: userLastName,
+        profileImage: profileImage,
+        accountNumber: accountNumber,
+        isVerified: isVerified,
+        isAdmin: isAdmin,
+        isSpecial: isSpecial,
       );
 
       _initialized = true;
       
-      logger.info('App state loaded: firstTime=$isFirstTime, loggedIn=$isUserLoggedIn', tag: 'APP_STATE');
+      logger.info('App state loaded: firstTime=$isFirstTime, loggedIn=$isUserLoggedIn, verified=$isVerified', tag: 'APP_STATE');
     } catch (e) {
       logger.error('Failed to load initial state', error: e, tag: 'APP_STATE');
       // Keep default state
@@ -114,7 +149,18 @@ class AppStateNotifier extends StateNotifier<AppState> {
     }
   }
 
-  Future<void> loginUser({required String token, required String phone, String? firstName, String? lastName}) async {
+  Future<void> loginUser({
+    required String token, 
+    required String phone, 
+    String? firstName, 
+    String? lastName,
+    String? profileImage,
+    String? accountNumber,
+    String? userId,
+    bool? isVerified,
+    bool? isAdmin,
+    bool? isSpecial,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_StorageKeys.isUserLoggedIn, true);
@@ -122,8 +168,16 @@ class AppStateNotifier extends StateNotifier<AppState> {
       await prefs.setBool(_StorageKeys.isGuest, false);
       await prefs.setString(_StorageKeys.userToken, token);
       await prefs.setString(_StorageKeys.userPhone, phone);
+      
       if (firstName != null) await prefs.setString(_StorageKeys.userFirstName, firstName);
       if (lastName != null) await prefs.setString(_StorageKeys.userLastName, lastName);
+      if (profileImage != null) await prefs.setString(_StorageKeys.profileImage, profileImage);
+      if (accountNumber != null) await prefs.setString(_StorageKeys.accountNumber, accountNumber);
+      if (userId != null) await prefs.setString('userId', userId);
+      
+      await prefs.setBool(_StorageKeys.isVerified, isVerified ?? false);
+      await prefs.setBool(_StorageKeys.isAdmin, isAdmin ?? false);
+      await prefs.setBool(_StorageKeys.isSpecial, isSpecial ?? false);
       
       state = state.copyWith(
         isUserLoggedIn: true,
@@ -132,6 +186,11 @@ class AppStateNotifier extends StateNotifier<AppState> {
         userPhone: phone,
         userFirstName: firstName ?? state.userFirstName,
         userLastName: lastName ?? state.userLastName,
+        profileImage: profileImage ?? state.profileImage,
+        accountNumber: accountNumber ?? state.accountNumber,
+        isVerified: isVerified ?? false,
+        isAdmin: isAdmin ?? false,
+        isSpecial: isSpecial ?? false,
       );
       logger.info('User logged in', tag: 'APP_STATE');
     } catch (e) {
@@ -148,8 +207,11 @@ class AppStateNotifier extends StateNotifier<AppState> {
       await prefs.remove(_StorageKeys.userPhone);
       await prefs.remove(_StorageKeys.userFirstName);
       await prefs.remove(_StorageKeys.userLastName);
-      // حذف صورة البروفايل أيضاً
-      await prefs.remove('userProfileImage');
+      await prefs.remove(_StorageKeys.profileImage);
+      await prefs.remove(_StorageKeys.accountNumber);
+      await prefs.remove(_StorageKeys.isVerified);
+      await prefs.remove(_StorageKeys.isAdmin);
+      await prefs.remove(_StorageKeys.isSpecial);
       await prefs.remove('userId');
       
       state = state.copyWith(
@@ -159,6 +221,11 @@ class AppStateNotifier extends StateNotifier<AppState> {
         userPhone: null,
         userFirstName: null,
         userLastName: null,
+        profileImage: null,
+        accountNumber: null,
+        isVerified: false,
+        isAdmin: false,
+        isSpecial: false,
       );
       logger.info('User logged out', tag: 'APP_STATE');
     } catch (e) {
@@ -166,7 +233,15 @@ class AppStateNotifier extends StateNotifier<AppState> {
     }
   }
 
-  Future<void> updateUserInfo({String? firstName, String? lastName}) async {
+  Future<void> updateUserInfo({
+    String? firstName, 
+    String? lastName,
+    String? profileImage,
+    String? accountNumber,
+    bool? isVerified,
+    bool? isAdmin,
+    bool? isSpecial,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       
@@ -177,11 +252,31 @@ class AppStateNotifier extends StateNotifier<AppState> {
       if (lastName != null) {
         await prefs.setString(_StorageKeys.userLastName, lastName);
       }
+      if (profileImage != null) {
+        await prefs.setString(_StorageKeys.profileImage, profileImage);
+      }
+      if (accountNumber != null) {
+        await prefs.setString(_StorageKeys.accountNumber, accountNumber);
+      }
+      if (isVerified != null) {
+        await prefs.setBool(_StorageKeys.isVerified, isVerified);
+      }
+      if (isAdmin != null) {
+        await prefs.setBool(_StorageKeys.isAdmin, isAdmin);
+      }
+      if (isSpecial != null) {
+        await prefs.setBool(_StorageKeys.isSpecial, isSpecial);
+      }
       
       // Update state with new values (or keep existing if null)
       state = state.copyWith(
         userFirstName: firstName ?? state.userFirstName,
         userLastName: lastName ?? state.userLastName,
+        profileImage: profileImage ?? state.profileImage,
+        accountNumber: accountNumber ?? state.accountNumber,
+        isVerified: isVerified ?? state.isVerified,
+        isAdmin: isAdmin ?? state.isAdmin,
+        isSpecial: isSpecial ?? state.isSpecial,
       );
       
       logger.info('User info updated', tag: 'APP_STATE');
