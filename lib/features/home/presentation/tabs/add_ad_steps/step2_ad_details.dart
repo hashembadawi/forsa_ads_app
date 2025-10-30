@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../../shared/widgets/app_button.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../../../../core/services/location_service.dart';
+import '../../../../../core/ui/notifications.dart';
 import '../../../data/models/app_options.dart';
+import '../../screens/map_picker_screen.dart';
 
 class Step2AdDetails extends StatefulWidget {
   final Map<String, dynamic> adData;
@@ -23,6 +26,8 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
   late TextEditingController _titleController;
   late TextEditingController _priceController;
   late TextEditingController _descriptionController;
+  final LocationService _locationService = LocationService();
+  bool _isLoadingLocation = false;
 
   @override
   void initState() {
@@ -42,6 +47,93 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
     _priceController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLoadingLocation = true);
+
+    try {
+      final position = await _locationService.getCurrentLocation();
+
+      if (position != null && mounted) {
+        widget.onDataChanged('location', {
+          'type': 'Point',
+          'coordinates': [position.longitude, position.latitude],
+        });
+
+        Notifications.showSnack(
+          context,
+          'تم تحديد موقعك الحالي بنجاح',
+          type: NotificationType.success,
+          icon: Icons.check_circle,
+        );
+      } else if (mounted) {
+        Notifications.showSnack(
+          context,
+          'تعذر الحصول على الموقع. تأكد من تفعيل GPS ومنح الصلاحيات',
+          type: NotificationType.warning,
+          icon: Icons.warning,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Notifications.showSnack(
+          context,
+          'حدث خطأ في الحصول على الموقع',
+          type: NotificationType.error,
+          icon: Icons.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingLocation = false);
+      }
+    }
+  }
+
+  Future<void> _pickLocationFromMap() async {
+    // Get current location as initial if available, otherwise use Aleppo, Syria
+    LatLng? initialLocation;
+    final locationData = widget.adData['location'];
+    if (locationData != null && locationData['coordinates'] != null) {
+      final coords = locationData['coordinates'] as List;
+      if (coords.length == 2 && (coords[0] != 0.0 || coords[1] != 0.0)) {
+        initialLocation = LatLng(coords[1], coords[0]); // lat, lng
+      }
+    }
+    // If no location set, default will be Aleppo (set in MapPickerScreen)
+
+    final result = await Navigator.of(context).push<Map<String, double>>(
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(initialLocation: initialLocation),
+      ),
+    );
+
+    if (result != null && mounted) {
+      widget.onDataChanged('location', {
+        'type': 'Point',
+        'coordinates': [result['longitude']!, result['latitude']!],
+      });
+
+      Notifications.showSnack(
+        context,
+        'تم تحديد الموقع من الخريطة بنجاح',
+        type: NotificationType.success,
+        icon: Icons.check_circle,
+      );
+    }
+  }
+
+
+  bool _isLocationSelected() {
+    final locationData = widget.adData['location'];
+    if (locationData != null && locationData['coordinates'] != null) {
+      final coords = locationData['coordinates'] as List;
+      if (coords.length == 2 && (coords[0] != 0.0 || coords[1] != 0.0)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -74,7 +166,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
         Row(
           children: [
             Expanded(
-              flex: 2,
+              flex: 3,
               child: TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(
@@ -95,6 +187,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
             ),
             const SizedBox(width: 12),
             Expanded(
+              flex: 2,
               child: DropdownButtonFormField<int>(
                 value: widget.adData['currencyId'],
                 decoration: const InputDecoration(
@@ -104,6 +197,7 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
                   ),
                 ),
                 isExpanded: true,
+                menuMaxHeight: 300,
                 selectedItemBuilder: (context) {
                   return widget.options.currencies.map((currency) {
                     return Align(
@@ -116,20 +210,24 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
                     );
                   }).toList();
                 },
-                  items: widget.options.currencies.map((currency) {
-                    return DropdownMenuItem<int>(
-                      value: currency.id,
-                    child: Text(
-                      currency.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                items: widget.options.currencies.map((currency) {
+                  return DropdownMenuItem<int>(
+                    value: currency.id,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        currency.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                      ),
                     ),
-                    );
-                  }).toList(),
+                  );
+                }).toList(),
                 onChanged: (value) {
-                    final selectedCurrency = widget.options.currencies.firstWhere((curr) => curr.id == value);
+                  final selectedCurrency = widget.options.currencies.firstWhere((curr) => curr.id == value);
                   widget.onDataChanged('currencyId', value);
-                    widget.onDataChanged('currencyName', selectedCurrency.name);
+                  widget.onDataChanged('currencyName', selectedCurrency.name);
                 },
               ),
             ),
@@ -189,36 +287,93 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
         ),
         const SizedBox(height: 12),
 
-        // Location Selection
-        Row(
-          children: [
-            Expanded(
-              child: AppButton.outlined(
-                text: 'الموقع الحالي',
-                icon: Icons.my_location,
-                onPressed: () {
-                  // TODO: Get current location
-                  widget.onDataChanged('location', {
-                    'coordinates': [33.5138, 36.2765] // Example coordinates
-                  });
-                },
-                size: AppButtonSize.large,
-                fullWidth: true,
-              ),
+        // Location Selection Section
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+              width: 1,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AppButton.outlined(
-                text: 'من الخريطة',
-                icon: Icons.map,
-                onPressed: () {
-                  // TODO: Open map picker
-                },
-                size: AppButtonSize.large,
-                fullWidth: true,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Label at the top like TextField
+              Padding(
+                padding: const EdgeInsets.only(top: 8, left: 12, right: 12),
+                child: Row(
+                  children: [
+                    Text(
+                      'تحديد الموقع',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_isLocationSelected())
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              // Buttons
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+                          icon: _isLoadingLocation 
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.my_location, size: 20),
+                          label: const Text('موقعي الحالي'),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: _pickLocationFromMap,
+                          icon: const Icon(Icons.map_outlined, size: 20),
+                          label: const Text('من الخريطة'),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
 

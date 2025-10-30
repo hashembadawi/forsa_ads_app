@@ -65,6 +65,11 @@ dependencies:
   
   # Shimmer effect for loading
   shimmer: ^3.0.0
+  
+  # Location and Maps
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.1.0
+  permission_handler: ^11.0.1
 
 dev_dependencies:
   flutter_test:

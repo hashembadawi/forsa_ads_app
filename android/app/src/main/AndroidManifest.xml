@@ -3,6 +3,11 @@
     <!-- For Android 13+ (API 33) use READ_MEDIA_IMAGES; for older versions keep READ_EXTERNAL_STORAGE -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    
+    <!-- Location permissions for GPS and map features -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
     <application
         android:label="forsa_ads_app"
         android:name="${applicationName}"
@@ -34,6 +39,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        
+        <!-- Google Maps API Key - Replace YOUR_API_KEY_HERE with your actual key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAmVeqLslj7sr4R8yPvbhvzkkVGL2d3QjE"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

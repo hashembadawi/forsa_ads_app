@@ -42,7 +42,10 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
     'cityName': null,
     'regionId': null,
     'regionName': null,
-    'location': {'coordinates': [0.0, 0.0]},
+    'location': {
+      'type': 'Point',
+      'coordinates': [0.0, 0.0]
+    },
     'description': null,
     
     // Step 3
@@ -129,10 +132,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
     }
   }
 
-  void _onStepTapped(int step) {
-    setState(() => _currentStep = step);
-  }
-
   Future<void> _submitAd() async {
     // Show loading
     Notifications.showLoading(context, message: 'جاري نشر الإعلان...');
@@ -175,6 +174,10 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
         'isSpecial': appState.isSpecial,
         'forSale': _adData['forSale'] ?? true,
         'deliveryService': _adData['deliveryService'] ?? false,
+        'location': _adData['location'] ?? {
+          'type': 'Point',
+          'coordinates': [0.0, 0.0]
+        },
       };
       
       // Call service to add ad
@@ -218,8 +221,8 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
     final shouldPop = await Notifications.showConfirm(
       context,
       'هل تريد إلغاء إضافة الإعلان؟ سيتم فقدان جميع البيانات المدخلة.',
-      confirmText: 'نعم، إلغاء',
-      cancelText: 'لا، المتابعة',
+      confirmText: 'إلغاء الإعلان',
+      cancelText: 'المتابعة',
     );
     
     return shouldPop ?? false;
@@ -246,7 +249,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
             currentStep: _currentStep,
             onStepContinue: _onStepContinue,
             onStepCancel: _onStepCancel,
-            onStepTapped: _onStepTapped,
+            onStepTapped: null, // Disable step tapping - only allow navigation via next button
             controlsBuilder: (context, details) {
               return Padding(
                 padding: const EdgeInsets.only(top: 20),

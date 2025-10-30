@@ -28,6 +28,10 @@
 	<string>LaunchScreen</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>التطبيق يحتاج الوصول إلى ألبوم الصور لاختيار صورة الحساب الشخصي</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>نحتاج للوصول إلى موقعك لتحديد موقع الإعلان</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>نحتاج للوصول إلى موقعك لتحديد موقع الإعلان</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
