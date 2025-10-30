@@ -113,34 +113,7 @@ class UserAdCard extends ConsumerWidget {
                 fit: StackFit.expand,
                 children: [
                   _buildImage(),
-                  // Status badge overlay
-                  if (!ad.isApproved)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.warningColor,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Text(
-                          'قيد المراجعة',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+                  // تم حذف شارة قيد المراجعة من الزاوية اليمنى العليا
                 ],
               ),
             ),
@@ -299,25 +272,21 @@ class UserAdCard extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Approval status at the bottom of the card
+                  // Approval status under location
                   Row(
                     children: [
                       Icon(
                         ad.isApproved ? Icons.verified_outlined : Icons.hourglass_bottom_rounded,
                         size: 13,
-                        color: ad.isApproved
-                            ? Colors.green
-                            : AppTheme.warningColor,
+                        color: ad.isApproved ? Colors.green : AppTheme.warningColor,
                       ),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          ad.isApproved ? 'تمت الموافقة من الإدارة' : 'بانتظار الموافقة',
+                          ad.isApproved ? 'تمت الموافقة من الإدارة' : 'قيد المراجعة',
                           style: TextStyle(
                             fontSize: 11,
-                            color: ad.isApproved
-                                ? Colors.green
-                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: ad.isApproved ? Colors.green : AppTheme.warningColor,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,

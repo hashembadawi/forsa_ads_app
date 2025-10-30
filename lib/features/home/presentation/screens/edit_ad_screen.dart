@@ -256,7 +256,6 @@ class _EditAdScreenState extends State<EditAdScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
-                        filled: false,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -282,7 +281,6 @@ class _EditAdScreenState extends State<EditAdScreen> {
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
-                              filled: false,
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
@@ -314,12 +312,32 @@ class _EditAdScreenState extends State<EditAdScreen> {
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
-                              filled: false,
                             ),
+                            menuMaxHeight: 300,
+                            selectedItemBuilder: (context) {
+                              return _currencies.map((c) {
+                                return Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    c.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList();
+                            },
                             items: _currencies
                                 .map((c) => DropdownMenuItem<int>(
                                       value: c.id,
-                                      child: Text(c.name),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: Text(
+                                          c.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.right,
+                                        ),
+                                      ),
                                     ))
                                 .toList(),
                             onChanged: (val) {
@@ -347,7 +365,6 @@ class _EditAdScreenState extends State<EditAdScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
-                        filled: false,
                         alignLabelWithHint: true,
                       ),
                       maxLines: 4,
@@ -364,12 +381,14 @@ class _EditAdScreenState extends State<EditAdScreen> {
                     // Switches
                     SwitchListTile(
                       title: const Text('للبيع'),
+                      subtitle: const Text('إذا كان الإعلان للإيجار، قم بإلغاء التحديد'),
                       value: _forSale,
                       onChanged: (v) => setState(() => _forSale = v),
                       contentPadding: EdgeInsets.zero,
                     ),
                     SwitchListTile(
                       title: const Text('خدمة التوصيل'),
+                      subtitle: const Text('هل تقدم خدمة توصيل للمنتج؟'),
                       value: _deliveryService,
                       onChanged: (v) => setState(() => _deliveryService = v),
                       contentPadding: EdgeInsets.zero,

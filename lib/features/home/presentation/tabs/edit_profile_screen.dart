@@ -303,17 +303,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               const SizedBox(height: 40),
 
-              // حقل الاسم الأول
+              // حقل الاسم الأول (نفس نمط الحقول في Step 2)
               TextFormField(
                 controller: _firstNameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'الاسم الأول',
-                  prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
-                  filled: true,
-                  fillColor: AppTheme.backgroundColor,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -328,17 +325,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               const SizedBox(height: 20),
 
-              // حقل الاسم الأخير
+              // حقل الاسم الأخير (نفس نمط الحقول في Step 2)
               TextFormField(
                 controller: _lastNameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'الاسم الأخير',
-                  prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
-                  filled: true,
-                  fillColor: AppTheme.backgroundColor,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -353,14 +347,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               const SizedBox(height: 40),
 
-              // زر الحفظ
+              // زر الحفظ (مطابق لأزرار التطبيق الأساسية: بدون أيقونة، النص في المنتصف)
               AppButton(
                 text: 'حفظ التغييرات',
                 onPressed: _isLoading ? null : _updateProfile,
                 isLoading: _isLoading,
                 size: AppButtonSize.large,
                 fullWidth: true,
-                icon: Icons.save_rounded,
               ),
 
               const SizedBox(height: 16),

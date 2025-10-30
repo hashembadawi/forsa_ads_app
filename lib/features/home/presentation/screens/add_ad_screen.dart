@@ -282,36 +282,90 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
             steps: [
               Step(
                 title: const Text('التصنيف والخيارات'),
-                content: Step1CategoryOptions(
-                  adData: _adData,
-                    options: widget.options,
-                  onDataChanged: (key, value) {
-                    setState(() => _adData[key] = value);
-                  },
-                ),
+                content: AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.2, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: _currentStep == 0
+          ? Step1CategoryOptions(
+              key: const ValueKey('step1'),
+              adData: _adData,
+              options: widget.options,
+              onDataChanged: (key, value) {
+                setState(() => _adData[key] = value);
+              },
+            )
+          : const SizedBox.shrink(),
+    ),
                 isActive: _currentStep >= 0,
                 state: _currentStep > 0 ? StepState.complete : StepState.indexed,
               ),
               Step(
                 title: const Text('معلومات الإعلان'),
-                content: Step2AdDetails(
-                  adData: _adData,
-                    options: widget.options,
-                  onDataChanged: (key, value) {
-                    setState(() => _adData[key] = value);
-                  },
-                ),
+                content: AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.2, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: _currentStep == 1
+          ? Step2AdDetails(
+              key: const ValueKey('step2'),
+              adData: _adData,
+              options: widget.options,
+              onDataChanged: (key, value) {
+                setState(() => _adData[key] = value);
+              },
+            )
+          : const SizedBox.shrink(),
+    ),
                 isActive: _currentStep >= 1,
                 state: _currentStep > 1 ? StepState.complete : StepState.indexed,
               ),
               Step(
                 title: const Text('الصور'),
-                content: Step3Images(
-                  adData: _adData,
-                  onDataChanged: (key, value) {
-                    setState(() => _adData[key] = value);
-                  },
-                ),
+                content: AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.2, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: _currentStep == 2
+          ? Step3Images(
+              key: const ValueKey('step3'),
+              adData: _adData,
+              onDataChanged: (key, value) {
+                setState(() => _adData[key] = value);
+              },
+            )
+          : const SizedBox.shrink(),
+    ),
                 isActive: _currentStep >= 2,
                 state: _currentStep > 2 ? StepState.complete : StepState.indexed,
               ),
