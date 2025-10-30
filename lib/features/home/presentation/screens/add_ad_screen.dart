@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../core/ui/notifications.dart';
+import '../../../../shared/providers/app_state_provider.dart';
 import '../../data/models/app_options.dart';
+import '../../data/services/user_ads_service.dart';
 import '../tabs/add_ad_steps/step1_category_options.dart';
 import '../tabs/add_ad_steps/step2_ad_details.dart';
 import '../tabs/add_ad_steps/step3_images.dart';
@@ -134,21 +138,64 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
     Notifications.showLoading(context, message: 'جاري نشر الإعلان...');
     
     try {
-      // TODO: Implement submit logic
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      // Get user info from state
+      final appState = ref.read(appStateProvider);
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId');
+      
+      if (appState.userToken == null || userId == null) {
+        throw Exception('معلومات المستخدم غير متوفرة. يرجى تسجيل الدخول مرة أخرى');
+      }
+
+      // Build full user name
+      final firstName = appState.userFirstName ?? '';
+      final lastName = appState.userLastName ?? '';
+      final userName = '$firstName $lastName'.trim();
+      
+      // Prepare request body
+      final body = {
+        'userId': userId,
+        'userPhone': appState.userPhone ?? '',
+        'userName': userName.isNotEmpty ? userName : 'مستخدم',
+        'adTitle': _adData['adTitle'],
+        'price': _adData['price'],
+        'currencyId': _adData['currencyId'],
+        'currencyName': _adData['currencyName'],
+        'categoryId': _adData['categoryId'],
+        'categoryName': _adData['categoryName'],
+        'subCategoryId': _adData['subCategoryId'],
+        'subCategoryName': _adData['subCategoryName'],
+        'cityId': _adData['cityId'],
+        'cityName': _adData['cityName'],
+        'regionId': _adData['regionId'],
+        'regionName': _adData['regionName'],
+        'thumbnail': _adData['thumbnail'] ?? '',
+        'images': _adData['images'] ?? [],
+        'description': _adData['description'],
+        'isSpecial': false,
+        'forSale': _adData['forSale'] ?? true,
+        'deliveryService': _adData['deliveryService'] ?? false,
+      };
+      
+      // Call service to add ad
+      final service = UserAdsService(Dio());
+      await service.addAd(
+        token: appState.userToken!,
+        body: body,
+      );
       
       if (!mounted) return;
       
       Notifications.hideLoading(context);
       
-      // Show success and return with index 0 (home tab)
+      // Show success and return to My Ads tab (index 3)
       Notifications.showSuccess(
         context,
         'تم نشر الإعلان بنجاح',
         okText: 'موافق',
         onOk: () {
           if (mounted) {
-            Navigator.of(context).pop(0); // Return to home tab
+            Navigator.of(context).pop(3); // Return to My Ads tab
           }
         },
       );
@@ -156,7 +203,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
       if (!mounted) return;
       
       Notifications.hideLoading(context);
-      Notifications.showError(context, 'حدث خطأ أثناء نشر الإعلان. يرجى المحاولة مرة أخرى');
+      Notifications.showError(context, e.toString().replaceAll('Exception: ', ''));
     }
   }
 
