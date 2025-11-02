@@ -22,8 +22,8 @@ class AuthService {
         'Authorization': 'Bearer $token',
       },
       validateStatus: (status) => status != null && status < 500,
-      sendTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
       contentType: 'application/json',
       responseType: ResponseType.json,
     );
