@@ -97,6 +97,30 @@ class HomeAdCard extends StatelessWidget {
     );
   }
 
+  Widget _buildDeliveryBadge() {
+    if (ad.deliveryService) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.08),
+          border: Border.all(color: Colors.green.withOpacity(0.18)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text('توصيل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green)),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.06),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text('بدون توصيل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Horizontal layout: text on the left, image on the right (square)
@@ -236,6 +260,8 @@ class HomeAdCard extends StatelessWidget {
                 if (ad.isSpecial) _buildSpecialBadge(),
                 if (ad.isSpecial) const SizedBox(height: 6),
                 _buildTypeBadge(),
+                const SizedBox(height: 6),
+                _buildDeliveryBadge(),
               ],
             ),
           ],
