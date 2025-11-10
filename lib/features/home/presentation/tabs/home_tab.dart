@@ -14,6 +14,12 @@ class HomeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
+    final publicState = ref.watch(publicAdsProvider);
+
+    // Trigger initial load of public ads when entering the tab if not already loaded
+    if (publicState.ads.isEmpty && !publicState.isLoading && publicState.error == null) {
+      Future.microtask(() => ref.read(publicAdsProvider.notifier).fetchAds(refresh: true));
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(AppConstants.appName)),
