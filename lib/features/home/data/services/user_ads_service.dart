@@ -146,6 +146,50 @@ class UserAdsService {
     }
   }
 
+  /// Fetch public ads with pagination (no auth required)
+  Future<Map<String, dynamic>> fetchAds({
+    int page = 1,
+    int limit = 15,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '$baseUrl/api/ads',
+        queryParameters: {
+          'page': page,
+          'limit': limit,
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      final List<UserAd> ads = (response.data['ads'] as List)
+          .map((ad) => UserAd.fromJson(ad))
+          .toList();
+
+      return {
+        'ads': ads,
+        'total': response.data['total'],
+        'page': response.data['page'],
+        'limit': response.data['limit'],
+      };
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('لا يوجد اتصال بالإنترنت');
+      } else if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
+        throw Exception('خطأ في الخادم. يرجى المحاولة لاحقاً');
+      } else {
+        throw Exception('حدث خطأ أثناء تحميل الإعلانات');
+      }
+    } catch (e) {
+      throw Exception('حدث خطأ غير متوقع: $e');
+    }
+  }
+
   Future<void> deleteAd({
     required String adId,
     required String token,
