@@ -89,193 +89,139 @@ class UserAdCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildTypeBadge() {
+    final label = ad.forSale ? 'للبيع' : 'للإيجار';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withOpacity(0.08),
+        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.18)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+      ),
+    );
+  }
+
+  Widget _buildDeliveryBadge() {
+    if (ad.deliveryService) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.08),
+          border: Border.all(color: Colors.green.withOpacity(0.18)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text('توصيل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green)),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.06),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text('بدون توصيل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () {
-        _handleTap(context, ref);
-      },
+      onTap: () => _handleTap(context, ref),
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Image section
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: AspectRatio(
-              aspectRatio: 1.2,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _buildImage(),
-                  // تم حذف شارة قيد المراجعة من الزاوية اليمنى العليا
-                ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12.0),
+          child: Row(
+            textDirection: TextDirection.rtl,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Image on the right
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(width: 72, height: 72, child: _buildImage()),
               ),
-            ),
-          ),
-          
-          // Content section
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title
-                  Text(
-                    ad.adTitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  
-                  // Price + Currency row (right aligned). Category hidden per design.
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Directionality(
-                            // keep numbers LTR inside the small group
-                            textDirection: TextDirection.ltr,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                // Currency (right-most)
-                                Text(
-                                  ad.currencyName,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.primaryColor,
-                                    height: 1.0,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(width: 4),
-                                // Price (after currency)
-                                Flexible(
-                                  child: Text(
-                                    _formatPrice(ad.price),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.left,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryColor,
-                                      height: 1.0,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
 
-                  // Ultra-thin divider with minimal padding
-                  Divider(
-                    height: 0.5,
-                    thickness: 0.5,
-                    color: Theme.of(context).dividerColor.withOpacity(0.6),
-                  ),
-                  const SizedBox(height: 2),
-                  
-                  // Time info (first line)
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time_rounded,
-                        size: 13,
-                        color: AppTheme.iconInactiveColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          _getTimeAgo(ad.createDate),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 12),
+
+              // Textual details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title
+                    Text(
+                      ad.adTitle,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                    ),
+                    const SizedBox(height: 2),
+
+                    // Currency then price
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(ad.currencyName, style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 4),
+                            Text(_formatPrice(ad.price), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  // Location info (second line)
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 13,
-                        color: AppTheme.iconInactiveColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          ad.cityName,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  // Approval status under location
-                  Row(
-                    children: [
-                      Icon(
-                        ad.isApproved ? Icons.verified_outlined : Icons.hourglass_bottom_rounded,
-                        size: 13,
-                        color: ad.isApproved ? Colors.green : AppTheme.warningColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          ad.isApproved ? 'تمت الموافقة من الإدارة' : 'قيد المراجعة',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: ad.isApproved ? Colors.green : AppTheme.warningColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+
+                    const SizedBox(height: 1),
+
+                    // Time row
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.access_time_rounded, size: 12, color: Colors.black54),
+                        const SizedBox(width: 4),
+                        Text(_getTimeAgo(ad.createDate), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      ]),
+                    ),
+                    const SizedBox(height: 2),
+
+                    // Approval status
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(ad.isApproved ? Icons.verified_outlined : Icons.hourglass_bottom_rounded, size: 12, color: ad.isApproved ? Colors.green : AppTheme.warningColor),
+                        const SizedBox(width: 4),
+                        Text(ad.isApproved ? 'تمت الموافقة من الإدارة' : 'قيد المراجعة', style: TextStyle(fontSize: 11, color: ad.isApproved ? Colors.green : AppTheme.warningColor, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                ),
               ),
+            // Opposite-side badges (delivery and type)
+            const SizedBox(width: 8),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildDeliveryBadge(),
+                const SizedBox(height: 6),
+                _buildTypeBadge(),
+              ],
             ),
+          ],
           ),
-        ],
+        ),
       ),
-    ),
     );
   }
 }

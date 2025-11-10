@@ -4,8 +4,8 @@ import '../../../../core/constants/strings.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../providers/user_ads_provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../widgets/user_ad_card.dart';
-import '../widgets/ad_card_shimmer.dart';
 
 class MyAdsTab extends ConsumerStatefulWidget {
   const MyAdsTab({super.key});
@@ -199,18 +199,47 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
       );
     }
 
-    // Show loading shimmer on first load
+    // Show loading shimmer on first load (compact horizontal rows)
     if (state.isLoading && state.ads.isEmpty) {
-      return GridView.builder(
+      return ListView.separated(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(8),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: UserAdCard.kGridAspectRatio,
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 8,
-        ),
-        itemCount: 6, // Show 6 shimmer cards
-        itemBuilder: (context, index) => const AdCardShimmer(),
+        itemCount: 6,
+        separatorBuilder: (_, __) => const SizedBox(height: 6),
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    // Text placeholders
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(height: 14, width: double.infinity, color: Colors.grey[300]),
+                          const SizedBox(height: 6),
+                          Container(height: 12, width: 100, color: Colors.grey[300]),
+                          const SizedBox(height: 6),
+                          Container(height: 12, width: 80, color: Colors.grey[300]),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Image placeholder
+                    Container(width: 72, height: 72, color: Colors.grey[300]),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       );
     }
 
@@ -241,23 +270,19 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
       );
     }
 
-    // Show ads grid with pagination
-    return GridView.builder(
-      controller: _scrollController,
+    // Show ads list (one ad per row) with pagination
+    return ListView.separated(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: UserAdCard.kGridAspectRatio,
-        crossAxisSpacing: 6,
-        mainAxisSpacing: 8,
-      ),
       itemCount: state.ads.length + (state.hasMore ? 1 : 0),
+      separatorBuilder: (_, __) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
         // Show loading indicator at the end
         if (index == state.ads.length) {
           return Center(
-            child: const Padding(
-              padding: EdgeInsets.all(16),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
               child: SizedBox(
                 height: 24,
                 width: 24,
