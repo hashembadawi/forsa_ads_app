@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../../core/utils/image_compress.dart';
 import 'dart:convert';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/ui/notifications.dart';
@@ -40,8 +41,13 @@ class _Step3ImagesState extends State<Step3Images> {
       );
       
       if (file != null) {
-        final bytes = await file.readAsBytes();
-        final base64Image = base64Encode(bytes);
+        // Compress client-side and get base64 string
+        final base64Image = await compressXFileToBase64(
+          file,
+          quality: 80,
+          maxWidth: 1280,
+          watermarkText: 'فرصة',
+        );
         setState(() => _thumbnail = base64Image);
         widget.onDataChanged('thumbnail', base64Image);
       }
@@ -72,9 +78,9 @@ class _Step3ImagesState extends State<Step3Images> {
 
     try {
       final List<XFile> files = await _imagePicker.pickMultiImage(
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 95,
       );
       
       if (files.isEmpty) return;
@@ -95,8 +101,13 @@ class _Step3ImagesState extends State<Step3Images> {
       // Process selected images
       final List<String> newImages = [];
       for (final file in filesToProcess) {
-        final bytes = await file.readAsBytes();
-        final base64Image = base64Encode(bytes);
+        // Compress each selected image on client-side before encoding and add watermark
+        final base64Image = await compressXFileToBase64(
+          file,
+          quality: 75,
+          maxWidth: 1280,
+          watermarkText: 'فرصة',
+        );
         newImages.add(base64Image);
       }
       
