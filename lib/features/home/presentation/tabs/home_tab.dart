@@ -95,7 +95,7 @@ class HomeTab extends ConsumerWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: 6,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, __) => const SizedBox(height: 6),
           itemBuilder: (context, index) {
             return Shimmer.fromColors(
               baseColor: Colors.grey[300]!,
@@ -112,14 +112,14 @@ class HomeTab extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(height: 16, width: double.infinity, color: Colors.grey[300]),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Container(height: 14, width: 120, color: Colors.grey[300]),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Container(height: 12, width: 80, color: Colors.grey[300]),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       // Image placeholder
                       Container(width: 110, height: 110, color: Colors.grey[300]),
                     ],
@@ -148,12 +148,12 @@ class HomeTab extends ConsumerWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: state.ads.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, __) => const SizedBox(height: 6),
             itemBuilder: (context, index) {
               return HomeAdCard(ad: state.ads[index]);
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           if (state.hasMore)
             SizedBox(
               width: double.infinity,

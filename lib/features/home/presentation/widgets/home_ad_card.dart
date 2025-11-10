@@ -61,6 +61,42 @@ class HomeAdCard extends StatelessWidget {
     return _ImageWithShimmer(imageBytes: bytes);
   }
 
+  Widget _buildTypeBadge() {
+    final label = ad.forSale ? 'للبيع' : 'للإيجار';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withOpacity(0.08),
+        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.18)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildSpecialBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.12),
+        border: Border.all(color: Colors.amber.withOpacity(0.24)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.star, size: 12, color: Colors.amber),
+          SizedBox(width: 6),
+          Text('مميز', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.amber)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Horizontal layout: text on the left, image on the right (square)
@@ -100,7 +136,7 @@ class HomeAdCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
 
                   // Currency then price (currency first, then numeric price)
                   Align(
@@ -114,7 +150,7 @@ class HomeAdCard extends StatelessWidget {
                             ad.currencyName,
                             style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.w600),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           Text(
                             _formatPrice(ad.price),
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
@@ -123,7 +159,7 @@ class HomeAdCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
 
                   // Main category with icon under the price
                   Align(
@@ -132,7 +168,7 @@ class HomeAdCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.category_outlined, size: 12, color: Colors.black54),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             ad.categoryName,
@@ -145,7 +181,32 @@ class HomeAdCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
+
+                  // City and region (same row) placed under category and above the publish time
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 12, color: Colors.black54),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            ad.regionName != null && ad.regionName!.isNotEmpty
+                                ? '${ad.cityName} - ${ad.regionName}'
+                                : ad.cityName,
+                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 1),
 
                   // Publish time with clock icon, aligned to the right
                   Align(
@@ -154,7 +215,7 @@ class HomeAdCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.access_time_rounded, size: 12, color: Colors.black54),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Text(
                           _getTimeAgo(ad.createDate),
                           style: const TextStyle(fontSize: 12, color: Colors.black54),
@@ -163,9 +224,19 @@ class HomeAdCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+            // Opposite-side badges: special badge (top) and type badge (below)
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (ad.isSpecial) _buildSpecialBadge(),
+                if (ad.isSpecial) const SizedBox(height: 6),
+                _buildTypeBadge(),
+              ],
             ),
           ],
         ),

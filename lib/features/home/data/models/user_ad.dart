@@ -12,6 +12,7 @@ class UserAd {
   final String description;
   final bool forSale;
   final bool deliveryService;
+  final bool isSpecial;
 
   UserAd({
     required this.id,
@@ -27,6 +28,7 @@ class UserAd {
     this.description = '',
     this.forSale = true,
     this.deliveryService = false,
+    this.isSpecial = false,
   });
 
   factory UserAd.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,7 @@ class UserAd {
       description: json['description'] ?? '',
       forSale: json['forSale'] ?? true,
       deliveryService: json['deliveryService'] ?? false,
+      isSpecial: json['isSpecial'] ?? false,
     );
   }
 }
