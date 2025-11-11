@@ -171,12 +171,15 @@ class HomeAdCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Title (right-aligned)
-                  Text(
-                    ad.adTitle,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
+                  Flexible(
+                    child: Text(
+                      ad.adTitle,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                      textAlign: TextAlign.right,
+                    ),
                   ),
                   const SizedBox(height: 1),
 
