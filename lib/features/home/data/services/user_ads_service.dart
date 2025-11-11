@@ -119,11 +119,16 @@ class UserAdsService {
           .map((ad) => UserAd.fromJson(ad))
           .toList();
 
+      // Include top-level images array (if present) so callers can access
+      // server-provided images that are not embedded per-ad.
+      final List<dynamic> topImages = response.data['images'] is List ? response.data['images'] as List<dynamic> : [];
+
       return {
         'ads': ads,
         'total': response.data['total'],
         'page': response.data['page'],
         'limit': response.data['limit'],
+        'images': topImages,
       };
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
@@ -167,11 +172,18 @@ class UserAdsService {
           .map((ad) => UserAd.fromJson(ad))
           .toList();
 
+      // Also include any top-level images array returned by the API
+      // so callers (like the PublicAdsProvider) can show a slider from
+      // server-provided images that aren't embedded per-ad.
+      final List<dynamic> topImages =
+          response.data['images'] is List ? response.data['images'] as List<dynamic> : [];
+
       return {
         'ads': ads,
         'total': response.data['total'],
         'page': response.data['page'],
         'limit': response.data['limit'],
+        'images': topImages,
       };
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||

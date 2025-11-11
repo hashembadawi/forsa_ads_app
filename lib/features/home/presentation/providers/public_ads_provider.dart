@@ -5,6 +5,7 @@ import '../../data/services/user_ads_service.dart';
 
 class PublicAdsState {
   final List<UserAd> ads;
+  final List<Map<String, dynamic>> images;
   final bool isLoading;
   final String? error;
   final int currentPage;
@@ -13,6 +14,7 @@ class PublicAdsState {
 
   PublicAdsState({
     this.ads = const [],
+    this.images = const [],
     this.isLoading = false,
     this.error,
     this.currentPage = 1,
@@ -22,6 +24,7 @@ class PublicAdsState {
 
   PublicAdsState copyWith({
     List<UserAd>? ads,
+    List<Map<String, dynamic>>? images,
     bool? isLoading,
     String? error,
     int? currentPage,
@@ -30,6 +33,7 @@ class PublicAdsState {
   }) {
     return PublicAdsState(
       ads: ads ?? this.ads,
+      images: images ?? this.images,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       currentPage: currentPage ?? this.currentPage,
@@ -59,9 +63,14 @@ class PublicAdsNotifier extends StateNotifier<PublicAdsState> {
 
       final newAds = result['ads'] as List<UserAd>;
       final total = result['total'] as int;
+      final topImages = (result['images'] as List<dynamic>?)
+              ?.map((e) => e is Map<String, dynamic> ? e : <String, dynamic>{})
+              .toList() ??
+          <Map<String, dynamic>>[];
 
       state = state.copyWith(
         ads: refresh ? newAds : [...state.ads, ...newAds],
+        images: refresh ? topImages : [...state.images, ...topImages],
         isLoading: false,
         currentPage: page + 1,
         totalAds: total,

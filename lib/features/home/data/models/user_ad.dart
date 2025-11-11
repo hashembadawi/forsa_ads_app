@@ -13,6 +13,7 @@ class UserAd {
   final bool forSale;
   final bool deliveryService;
   final bool isSpecial;
+  final List<Map<String, dynamic>> images;
 
   UserAd({
     required this.id,
@@ -29,6 +30,7 @@ class UserAd {
     this.forSale = true,
     this.deliveryService = false,
     this.isSpecial = false,
+    this.images = const [],
   });
 
   factory UserAd.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,10 @@ class UserAd {
       forSale: json['forSale'] ?? true,
       deliveryService: json['deliveryService'] ?? false,
       isSpecial: json['isSpecial'] ?? false,
+      images: (json['images'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e as Map))
+              .toList() ??
+          [],
     );
   }
 }

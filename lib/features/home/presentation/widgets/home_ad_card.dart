@@ -40,11 +40,29 @@ class HomeAdCard extends StatelessWidget {
 
   Uint8List _decodeBase64(String base64String) {
     try {
-      String cleanBase64 = base64String;
-      if (base64String.contains(',')) {
-        cleanBase64 = base64String.split(',')[1];
+      var cleanBase64 = base64String;
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
       }
-      return Uint8List.fromList(base64.decode(cleanBase64));
+      // remove any whitespace/newlines and non-base64 characters
+      cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
+      cleanBase64 = cleanBase64.replaceAll(RegExp(r'[^A-Za-z0-9+/=_-]'), '');
+
+      // Try decode; if fails, attempt padding fixes
+      try {
+        return Uint8List.fromList(base64.decode(cleanBase64));
+      } catch (_) {}
+
+      var padded = cleanBase64;
+      while (padded.length % 4 != 0) {
+        padded += '=';
+        if (padded.length > cleanBase64.length + 4) break;
+      }
+      try {
+        return Uint8List.fromList(base64.decode(padded));
+      } catch (_) {
+        return Uint8List(0);
+      }
     } catch (e) {
       return Uint8List(0);
     }

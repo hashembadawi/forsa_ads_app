@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/strings.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/providers/app_state_provider.dart';
+// theme import removed (not needed for carousel background)
 import '../providers/public_ads_provider.dart';
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:shimmer/shimmer.dart';
 import '../widgets/home_ad_card.dart';
 
@@ -13,7 +16,6 @@ class HomeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appState = ref.watch(appStateProvider);
     final publicState = ref.watch(publicAdsProvider);
 
     // Trigger initial load of public ads when entering the tab if not already loaded
@@ -30,40 +32,8 @@ class HomeTab extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // User greeting (show full name when available)
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Builder(builder: (context) {
-                      String greeting = AppStrings.welcomeGuest;
-                      if (appState.isUserLoggedIn) {
-                        final first = appState.userFirstName ?? '';
-                        final last = appState.userLastName ?? '';
-                        final fullName = '${first.trim()} ${last.trim()}'.trim();
-                        greeting = fullName.isNotEmpty ? '${AppStrings.welcomeRegistered} $fullName' : AppStrings.welcomeRegistered;
-                      }
-                      return Text(
-                        greeting,
-                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                      );
-                    }),
-                    const SizedBox(height: 8),
-                    Text(
-                      appState.isUserLoggedIn ? AppStrings.welcomeSubtitleRegistered : AppStrings.welcomeSubtitleGuest,
-                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
+              // Image slider (replaces previous greeting section)
+              AdsImageCarousel(),
               const SizedBox(height: 20),
 
               // Recent ads
@@ -171,5 +141,228 @@ class HomeTab extends ConsumerWidget {
         ],
       );
     });
+  }
+}
+
+class AdsImageCarousel extends ConsumerStatefulWidget {
+  const AdsImageCarousel({Key? key}) : super(key: key);
+
+  @override
+  ConsumerState<AdsImageCarousel> createState() => _AdsImageCarouselState();
+}
+
+class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
+  final PageController _controller = PageController();
+  Timer? _timer;
+  List<String> _images = [];
+  int _currentIndex = 0;
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (_images.length <= 1) return;
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!_controller.hasClients || _images.isEmpty) return;
+      final next = (_currentIndex + 1) % _images.length;
+      _controller.animateToPage(next, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // Attempt robust base64 decode: try standard base64, url-safe base64,
+  // and fix padding if needed. Returns null on failure.
+  Uint8List? _tryDecodeBase64(String s) {
+    try {
+      // Remove any non-base64 characters (safety)
+      final cleaned = s.replaceAll(RegExp(r'[^A-Za-z0-9+/=_-]'), '');
+
+      // Try standard decode first
+      try {
+        return base64Decode(cleaned);
+      } catch (_) {}
+
+      // Try URL-safe decode
+      try {
+        return base64Url.decode(cleaned);
+      } catch (_) {}
+
+      // Try adding padding
+      var padded = cleaned;
+      while (padded.length % 4 != 0) {
+        padded += '=';
+        if (padded.length > cleaned.length + 4) break;
+      }
+      try {
+        return base64Decode(padded);
+      } catch (_) {}
+
+      // Last attempt: replace url-safe chars then decode
+      final replaced = cleaned.replaceAll('-', '+').replaceAll('_', '/');
+      try {
+        return base64Decode(replaced);
+      } catch (_) {}
+
+    } catch (e) {
+      if (kDebugMode) debugPrint('AdsImageCarousel: unexpected decode error $e');
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(publicAdsProvider);
+
+    // Use ONLY the top-level `images` array returned by the API (state.images).
+    // Do not include per-ad thumbnails or ad.images here — user requested
+    // the slider to show only the top-level `images` entries.
+    final List<String> images = [];
+    try {
+      for (final m in state.images) {
+        final content = (m['content'] ?? '').toString().trim();
+        if (content.isNotEmpty) images.add(content);
+      }
+    } catch (_) {}
+
+    // Remove duplicates while preserving order
+    final seen = <String>{};
+    final filtered = <String>[];
+    for (final s in images) {
+      if (s.isNotEmpty && !seen.contains(s)) {
+        seen.add(s);
+        filtered.add(s);
+      }
+    }
+
+    final aggregated = filtered;
+
+    if (kDebugMode) {
+      try {
+        final totalTopImages = state.images.length;
+        final totalImages = aggregated.length;
+        final firstSample = aggregated.isNotEmpty ? (aggregated[0].length > 120 ? aggregated[0].substring(0, 120) : aggregated[0]) : '';
+        debugPrint('AdsImageCarousel: topImages=$totalTopImages images=$totalImages firstSample(len=${aggregated.isNotEmpty?aggregated[0].length:0})="${firstSample.replaceAll('\n', '')}"');
+      } catch (e) {
+        debugPrint('AdsImageCarousel: debug print failed: $e');
+      }
+    }
+
+    // If images changed, update and restart timer after frame
+    if (!listEquals(aggregated, _images)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _images = aggregated;
+          _currentIndex = 0;
+          if (_controller.hasClients) {
+            _controller.jumpToPage(0);
+          }
+        });
+        _startTimer();
+      });
+    }
+
+    if (_images.isEmpty) {
+      // No images yet: show a compact shimmer/placeholder without gradient
+      return SizedBox(
+        height: 180,
+        child: Center(
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: 140,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 180,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          // PageView shows images edge-to-edge without an outer gradient/background
+          PageView.builder(
+            controller: _controller,
+            itemCount: _images.length,
+            onPageChanged: (i) => setState(() => _currentIndex = i),
+            itemBuilder: (context, index) {
+              var content = _images[index];
+              // If the content is a data URI like 'data:image/png;base64,...', strip the prefix.
+              if (content.contains(',')) {
+                final parts = content.split(',');
+                content = parts.last;
+              }
+
+              // sanitize
+              content = content.trim();
+              content = content.replaceAll(RegExp(r'\s+'), '');
+
+              Uint8List? decoded;
+              try {
+                decoded = _tryDecodeBase64(content);
+              } catch (e) {
+                if (kDebugMode) debugPrint('AdsImageCarousel: _tryDecodeBase64 threw: $e');
+              }
+
+              if (decoded != null) {
+                return SizedBox.expand(
+                  child: Image.memory(decoded, fit: BoxFit.cover),
+                );
+              }
+
+              // fallback placeholder
+              return Container(color: Colors.grey[300]);
+            },
+          ),
+
+          // Indicators
+          Positioned(
+            bottom: 8,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(_images.length, (i) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _currentIndex == i ? 10 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(_currentIndex == i ? 0.95 : 0.6),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                );
+              }),
+            ),
+          ),
+
+          // Debug overlay in DEBUG mode to show how many images were found (temporary)
+          if (kDebugMode)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                color: Colors.black54,
+                child: Text(
+                  'top=${state.images.length} images=${_images.length} • first len=${_images.isNotEmpty ? _images[0].length : 0}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
