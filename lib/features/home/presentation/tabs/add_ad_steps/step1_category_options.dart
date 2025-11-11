@@ -30,6 +30,7 @@ class Step1CategoryOptions extends StatelessWidget {
           // Category Selection
           DropdownButtonFormField<int>(
           value: adData['categoryId'],
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'التصنيف الرئيسي',
             border: OutlineInputBorder(
@@ -39,7 +40,11 @@ class Step1CategoryOptions extends StatelessWidget {
           items: options.categories.map((category) {
             return DropdownMenuItem<int>(
               value: category.id,
-              child: Text(category.name),
+              child: Text(
+                category.name,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             );
           }).toList(),
           onChanged: (value) {
@@ -56,6 +61,7 @@ class Step1CategoryOptions extends StatelessWidget {
         // SubCategory Selection
         DropdownButtonFormField<int>(
           value: adData['subCategoryId'],
+          isExpanded: true,
           decoration: InputDecoration(
             labelText: 'التصنيف الفرعي',
             border: OutlineInputBorder(
@@ -66,7 +72,11 @@ class Step1CategoryOptions extends StatelessWidget {
           items: filteredSubCategories.map((subCategory) {
             return DropdownMenuItem<int>(
               value: subCategory.id,
-              child: Text(subCategory.name),
+              child: Text(
+                subCategory.name,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             );
           }).toList(),
           onChanged: selectedCategoryId == null ? null : (value) {

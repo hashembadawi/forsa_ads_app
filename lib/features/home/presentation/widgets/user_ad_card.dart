@@ -172,11 +172,20 @@ class UserAdCard extends ConsumerWidget {
                       child: Directionality(
                         textDirection: TextDirection.ltr,
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(ad.currencyName, style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.w600)),
                             const SizedBox(width: 4),
-                            Text(_formatPrice(ad.price), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                            Flexible(
+                              child: Text(
+                                _formatPrice(ad.price),
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                textAlign: TextAlign.left,
+                              ),
+                            ),
                           ],
                         ),
                       ),
