@@ -269,20 +269,17 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
     }
 
     if (_images.isEmpty) {
-      // No images yet: show a compact framed shimmer placeholder
+      // No images yet: show a compact framed shimmer placeholder using Card
+      // so the shadow matches HomeAdCard (elevation: 2, rounded).
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
+        child: Card(
+          elevation: 2,
+          color: AppTheme.surfaceColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          clipBehavior: Clip.hardEdge,
+          child: SizedBox(
             height: 180,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
-              // match card-like subtle shadow
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6, offset: const Offset(0, 2)),
-              ],
-            ),
             child: Center(
               child: Shimmer.fromColors(
                 baseColor: Colors.grey[300]!,
@@ -304,17 +301,13 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
+      child: Card(
+        elevation: 2,
+        color: AppTheme.surfaceColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.hardEdge,
+        child: SizedBox(
           height: 180,
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
-            // subtle card-like shadow to match HomeAdCard
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6, offset: const Offset(0, 2)),
-            ],
-          ),
           child: Stack(
             alignment: Alignment.bottomCenter,
             children: [
