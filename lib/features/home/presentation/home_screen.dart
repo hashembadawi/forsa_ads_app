@@ -80,9 +80,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (!connected) return;
             setState(() => _selectedIndex = 2);
           },
-          shape: const CircleBorder(),
-          elevation: 6,
-          backgroundColor: AppTheme.accentColor, // برتقالي للنشاط والحيوية
+              shape: const CircleBorder(),
+              elevation: 6,
+              backgroundColor: AppTheme.primaryColor, // استخدم لون الزر المعتمد في التطبيق
           child: const Icon(Icons.add, size: 32, color: Colors.white),
         ),
       ),
