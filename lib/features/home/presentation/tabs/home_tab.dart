@@ -10,6 +10,8 @@ import 'dart:convert';
 
 import 'package:shimmer/shimmer.dart';
 import '../widgets/home_ad_card.dart';
+import '../../../../core/widgets/async_image_with_shimmer.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
@@ -267,19 +269,32 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
     }
 
     if (_images.isEmpty) {
-      // No images yet: show a compact shimmer/placeholder without gradient
-      return SizedBox(
-        height: 180,
-        child: Center(
-          child: Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.9,
-              height: 140,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
+      // No images yet: show a compact framed shimmer placeholder
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 180,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              // match card-like subtle shadow
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6, offset: const Offset(0, 2)),
+              ],
+            ),
+            child: Center(
+              child: Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
           ),
@@ -287,11 +302,22 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
       );
     }
 
-    return SizedBox(
-      height: 180,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 180,
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor,
+            // subtle card-like shadow to match HomeAdCard
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
           // PageView shows images edge-to-edge without an outer gradient/background
           PageView.builder(
             controller: _controller,
@@ -317,8 +343,11 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
               }
 
               if (decoded != null) {
-                return SizedBox.expand(
-                  child: Image.memory(decoded, fit: BoxFit.cover),
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AsyncImageWithShimmer(imageBytes: decoded, fit: BoxFit.cover),
+                  ],
                 );
               }
 
@@ -347,22 +376,11 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
             ),
           ),
 
-          // Debug overlay in DEBUG mode to show how many images were found (temporary)
-          if (kDebugMode)
-            Positioned(
-              top: 8,
-              left: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                color: Colors.black54,
-                child: Text(
-                  'top=${state.images.length} images=${_images.length} • first len=${_images.isNotEmpty ? _images[0].length : 0}',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
+          // debug overlay removed per user request
+        ],
               ),
             ),
-        ],
-      ),
-    );
+          ),
+        );
   }
 }
