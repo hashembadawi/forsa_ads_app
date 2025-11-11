@@ -36,7 +36,7 @@ class HomeTab extends ConsumerWidget {
             children: [
               // Image slider (replaces previous greeting section)
               AdsImageCarousel(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
 
               // Recent ads
               Padding(
@@ -48,14 +48,14 @@ class HomeTab extends ConsumerWidget {
                       AppStrings.recentAdsTitle,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     // Recent ads loaded from backend
                     _buildRecentAds(),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -73,7 +73,7 @@ class HomeTab extends ConsumerWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: 6,
-          separatorBuilder: (_, __) => const SizedBox(height: 6),
+          separatorBuilder: (_, __) => const SizedBox(height: 4),
           itemBuilder: (context, index) {
             return Shimmer.fromColors(
               baseColor: Colors.grey[300]!,
@@ -126,7 +126,7 @@ class HomeTab extends ConsumerWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: state.ads.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            separatorBuilder: (_, __) => const SizedBox(height: 4),
             itemBuilder: (context, index) {
               return HomeAdCard(ad: state.ads[index]);
             },
@@ -241,17 +241,6 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
     }
 
     final aggregated = filtered;
-
-    if (kDebugMode) {
-      try {
-        final totalTopImages = state.images.length;
-        final totalImages = aggregated.length;
-        final firstSample = aggregated.isNotEmpty ? (aggregated[0].length > 120 ? aggregated[0].substring(0, 120) : aggregated[0]) : '';
-        debugPrint('AdsImageCarousel: topImages=$totalTopImages images=$totalImages firstSample(len=${aggregated.isNotEmpty?aggregated[0].length:0})="${firstSample.replaceAll('\n', '')}"');
-      } catch (e) {
-        debugPrint('AdsImageCarousel: debug print failed: $e');
-      }
-    }
 
     // If images changed, update and restart timer after frame
     if (!listEquals(aggregated, _images)) {
