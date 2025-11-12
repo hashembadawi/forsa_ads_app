@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import '../models/user_ad.dart';
+import '../models/ad_details.dart';
 
 class UserAdsService {
   final Dio _dio;
@@ -196,6 +199,112 @@ class UserAdsService {
         throw Exception('خطأ في الخادم. يرجى المحاولة لاحقاً');
       } else {
         throw Exception('حدث خطأ أثناء تحميل الإعلانات');
+      }
+    } catch (e) {
+      throw Exception('حدث خطأ غير متوقع: $e');
+    }
+  }
+
+  /// Fetch a single ad by id
+  Future<UserAd> fetchAdById({required String adId}) async {
+    try {
+      final response = await _dio.get(
+        '$baseUrl/api/ads/getAdById/$adId',
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Keep existing behavior for backward compatibility and return UserAd
+        dynamic raw = response.data;
+        try {
+          if (raw is String) raw = jsonDecode(raw);
+        } catch (_) {}
+
+        Map<String, dynamic> data = {};
+        if (raw is Map && raw['ad'] != null) {
+          var adRaw = raw['ad'];
+          try {
+            if (adRaw is String) adRaw = jsonDecode(adRaw);
+          } catch (_) {}
+          if (adRaw is Map) data = Map<String, dynamic>.from(adRaw);
+        } else if (raw is Map) {
+          data = Map<String, dynamic>.from(raw);
+        }
+
+        return UserAd.fromJson(data);
+      } else if (response.statusCode == 404) {
+        throw Exception('لم يتم العثور على الإعلان');
+      } else {
+        throw Exception('تعذر جلب بيانات الإعلان');
+      }
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('لا يوجد اتصال بالإنترنت');
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى');
+      } else if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
+        throw Exception('خطأ في الخادم. يرجى المحاولة لاحقاً');
+      } else {
+        throw Exception('حدث خطأ أثناء جلب تفاصيل الإعلان');
+      }
+    } catch (e) {
+      throw Exception('حدث خطأ غير متوقع: $e');
+    }
+  }
+
+  /// Fetch ad details using AdDetails model. This is the preferred
+  /// method when opening the details screen (full rich payload).
+  Future<AdDetails> fetchAdDetails({required String adId}) async {
+    try {
+      final response = await _dio.get(
+        '$baseUrl/api/ads/getAdById/$adId',
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        dynamic raw = response.data;
+        try {
+          if (raw is String) raw = jsonDecode(raw);
+        } catch (_) {}
+
+        Map<String, dynamic> data = {};
+        if (raw is Map && raw['ad'] != null) {
+          var adRaw = raw['ad'];
+          try {
+            if (adRaw is String) adRaw = jsonDecode(adRaw);
+          } catch (_) {}
+          if (adRaw is Map) data = Map<String, dynamic>.from(adRaw);
+        } else if (raw is Map) {
+          data = Map<String, dynamic>.from(raw);
+        }
+
+        return AdDetails.fromJson(data);
+      } else if (response.statusCode == 404) {
+        throw Exception('لم يتم العثور على الإعلان');
+      } else {
+        throw Exception('تعذر جلب بيانات الإعلان');
+      }
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('لا يوجد اتصال بالإنترنت');
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى');
+      } else if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
+        throw Exception('خطأ في الخادم. يرجى المحاولة لاحقاً');
+      } else {
+        throw Exception('حدث خطأ أثناء جلب تفاصيل الإعلان');
       }
     } catch (e) {
       throw Exception('حدث خطأ غير متوقع: $e');

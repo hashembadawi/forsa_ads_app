@@ -9,7 +9,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:shimmer/shimmer.dart';
+import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import '../widgets/home_ad_card.dart';
+import '../../data/services/user_ads_service.dart';
+import '../../../../core/ui/notifications.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../core/ui/app_keys.dart';
 import '../../../../core/widgets/async_image_with_shimmer.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -128,7 +134,46 @@ class HomeTab extends ConsumerWidget {
             itemCount: state.ads.length,
             separatorBuilder: (_, __) => const SizedBox(height: 4),
             itemBuilder: (context, index) {
-              return HomeAdCard(ad: state.ads[index]);
+              final ad = state.ads[index];
+              return HomeAdCard(
+                ad: ad,
+                onTap: (selected) async {
+                  // Capture contexts/router before any await to avoid using
+                  // the local BuildContext across async gaps (linter warning).
+                  final notifyCtx = appNavigatorKey.currentContext ?? context;
+                  final fallbackRouter = GoRouter.of(context);
+
+                  try {
+                    Notifications.showLoading(notifyCtx, message: 'جاري التحميل...');
+                    final dio = Dio(
+                      BaseOptions(
+                        connectTimeout: const Duration(seconds: 15),
+                        receiveTimeout: const Duration(seconds: 15),
+                        sendTimeout: const Duration(seconds: 15),
+                      ),
+                    );
+                    final service = UserAdsService(dio);
+                    // Fetch full ad details (new model)
+                    final fetched = await service.fetchAdDetails(adId: selected.id);
+                    Notifications.hideLoading(notifyCtx);
+
+                    // Prefer global navigator context if available, otherwise
+                    // use the router captured before the await.
+                    final globalCtx = appNavigatorKey.currentContext;
+                    if (globalCtx != null) {
+                      GoRouter.of(globalCtx).push(AppRoutes.adDetails, extra: fetched);
+                    } else {
+                      fallbackRouter.push(AppRoutes.adDetails, extra: fetched);
+                    }
+                  } catch (e) {
+                    Notifications.hideLoading(notifyCtx);
+                    final msg = e.toString().replaceFirst('Exception: ', '');
+                    try {
+                      Notifications.showError(notifyCtx, msg);
+                    } catch (_) {}
+                  }
+                },
+              );
             },
           ),
           const SizedBox(height: 8),

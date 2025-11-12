@@ -11,8 +11,9 @@ class HomeAdCard extends StatelessWidget {
   static const double kGridAspectRatio = 4.0;
 
   final UserAd ad;
+  final void Function(UserAd ad)? onTap;
 
-  const HomeAdCard({super.key, required this.ad});
+  const HomeAdCard({super.key, required this.ad, this.onTap});
 
   String _getTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
@@ -142,156 +143,160 @@ class HomeAdCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Horizontal layout: text on the left, image on the right (square)
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-  padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12.0),
-        // Use RTL row so the card reads right-to-left and image stays on the right
-        child: Row(
-          textDirection: TextDirection.rtl,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Image on the right - square with rounded corners
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(
-                width: 72,
-                height: 72,
-                child: _buildImage(context),
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap == null ? null : () => onTap!.call(ad),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12.0),
+          // Use RTL row so the card reads right-to-left and image stays on the right
+          child: Row(
+            textDirection: TextDirection.rtl,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Image on the right - square with rounded corners
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: _buildImage(context),
+                ),
               ),
-            ),
 
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-            // Textual details (expand to fill remaining space) - text aligned to the right
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title (right-aligned)
-                  Flexible(
-                    child: Text(
-                      ad.adTitle,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: true,
-                      textAlign: TextAlign.right,
+              // Textual details (expand to fill remaining space) - text aligned to the right
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title (right-aligned)
+                    Flexible(
+                      child: Text(
+                        ad.adTitle,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: true,
+                        textAlign: TextAlign.right,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 1),
+                    const SizedBox(height: 1),
 
-                  // Currency then price (currency first, then numeric price)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Directionality(
-                      textDirection: TextDirection.ltr,
+                    // Currency then price (currency first, then numeric price)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              ad.currencyName,
+                              style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                _formatPrice(ad.price),
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                textAlign: TextAlign.left,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+
+                    // Main category with icon under the price
+                    Align(
+                      alignment: Alignment.centerRight,
                       child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            ad.currencyName,
-                            style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.w600),
-                          ),
+                          const Icon(Icons.category_outlined, size: 12, color: Colors.black54),
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              _formatPrice(ad.price),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
-                              overflow: TextOverflow.ellipsis,
+                              ad.categoryName,
+                              style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w600),
                               maxLines: 1,
-                              textAlign: TextAlign.left,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 1),
+                    const SizedBox(height: 1),
 
-                  // Main category with icon under the price
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.category_outlined, size: 12, color: Colors.black54),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            ad.categoryName,
-                            style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
+                    // City and region (same row) placed under category and above the publish time
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 12, color: Colors.black54),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              ad.regionName != null && ad.regionName!.isNotEmpty
+                                  ? '${ad.cityName} - ${ad.regionName}'
+                                  : ad.cityName,
+                              style: const TextStyle(fontSize: 12, color: Colors.black54),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 1),
 
-                  // City and region (same row) placed under category and above the publish time
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on_outlined, size: 12, color: Colors.black54),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            ad.regionName != null && ad.regionName!.isNotEmpty
-                                ? '${ad.cityName} - ${ad.regionName}'
-                                : ad.cityName,
+                    const SizedBox(height: 1),
+
+                    // Publish time with clock icon, aligned to the right
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.access_time_rounded, size: 12, color: Colors.black54),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getTimeAgo(ad.createDate),
                             style: const TextStyle(fontSize: 12, color: Colors.black54),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 1),
-
-                  // Publish time with clock icon, aligned to the right
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.access_time_rounded, size: 12, color: Colors.black54),
-                        const SizedBox(width: 4),
-                        Text(
-                          _getTimeAgo(ad.createDate),
-                          style: const TextStyle(fontSize: 12, color: Colors.black54),
-                          textAlign: TextAlign.right,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
+                    const SizedBox(height: 2),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Opposite-side badges: special badge (top) and type badge (below)
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (ad.isSpecial) _buildSpecialBadge(),
+                  if (ad.isSpecial) const SizedBox(height: 6),
+                  _buildTypeBadge(),
+                  const SizedBox(height: 6),
+                  _buildDeliveryBadge(),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            // Opposite-side badges: special badge (top) and type badge (below)
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (ad.isSpecial) _buildSpecialBadge(),
-                if (ad.isSpecial) const SizedBox(height: 6),
-                _buildTypeBadge(),
-                const SizedBox(height: 6),
-                _buildDeliveryBadge(),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

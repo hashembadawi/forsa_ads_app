@@ -6,6 +6,8 @@ import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/welcome/presentation/welcome_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/home/presentation/screens/edit_ad_screen.dart';
+import '../../features/home/presentation/screens/ad_details_screen.dart';
+import '../../features/home/data/models/ad_details.dart';
 import '../../features/home/data/models/user_ad.dart';
 import '../../features/auth/presentation/auth_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
@@ -71,6 +73,44 @@ final routerProvider = Provider<GoRouter>((ref) {
             ad = extra as UserAd;
           }
           return _sharedTransitionPage(child: EditAdScreen(ad: ad, currencies: currencies), key: state.pageKey);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.adDetails,
+        name: RouteNames.adDetails,
+        pageBuilder: (context, state) {
+          logger.debug('Building ad details screen', tag: 'ROUTER');
+          final extra = state.extra;
+          // Accept either AdDetails (preferred) or Map / UserAd fallback
+          if (extra is AdDetails) {
+            return _sharedTransitionPage(child: AdDetailsScreen(ad: extra), key: state.pageKey);
+          } else if (extra is Map) {
+            try {
+              final adMap = Map<String, dynamic>.from(extra);
+              final details = AdDetails.fromJson(adMap);
+              return _sharedTransitionPage(child: AdDetailsScreen(ad: details), key: state.pageKey);
+            } catch (_) {}
+          } else if (extra is UserAd) {
+            // Convert UserAd -> Map via its fields (best-effort minimal mapping)
+            final map = {
+              '_id': extra.id,
+              'adTitle': extra.adTitle,
+              'thumbnail': extra.thumbnail,
+              'images': extra.images,
+              'price': extra.price,
+              'currencyName': extra.currencyName,
+              'categoryName': extra.categoryName,
+              'cityName': extra.cityName,
+              'regionName': extra.regionName,
+              'createDate': extra.createDate.toIso8601String(),
+              'description': extra.description,
+              'isApproved': extra.isApproved,
+            };
+            final details = AdDetails.fromJson(map);
+            return _sharedTransitionPage(child: AdDetailsScreen(ad: details), key: state.pageKey);
+          }
+
+          throw Exception('Missing ad data for details screen');
         },
       ),
       GoRoute(
@@ -144,13 +184,14 @@ class AppRoutes {
   static const String welcome = '/welcome';
   static const String home = '/home';
   static const String editAd = '/edit-ad';
+  static const String adDetails = '/ad-details';
   static const String authChoice = '/auth-choice';
   static const String login = '/login';
   static const String register = '/register';
   static const String verify = '/verify';
   
   /// Get all available routes
-  static List<String> get allRoutes => [splash, welcome, home, editAd, authChoice, login, register];
+  static List<String> get allRoutes => [splash, welcome, home, editAd, adDetails, authChoice, login, register];
   
   /// Validate if route exists
   static bool isValidRoute(String route) => allRoutes.contains(route);
@@ -162,6 +203,7 @@ class RouteNames {
   static const String welcome = 'welcome';
   static const String home = 'home';
   static const String editAd = 'editAd';
+  static const String adDetails = 'adDetails';
   static const String authChoice = 'authChoice';
   static const String login = 'login';
   static const String register = 'register';
