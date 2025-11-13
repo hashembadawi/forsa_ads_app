@@ -127,24 +127,32 @@ class HomeTab extends ConsumerWidget {
 
       // Handle case: backend returned no ads (empty result) and not loading.
       if (!state.isLoading && state.ads.isEmpty) {
+        // Center the empty state (icon, message, button) vertically
+        final totalHeight = MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top;
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 36.0, horizontal: 20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.search_off, size: 64, color: Colors.grey[500]),
-              const SizedBox(height: 12),
-              Text(
-                'لا توجد إعلانات للعرض حالياً',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[700]),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: SizedBox(
+            height: totalHeight,
+            child: Align(
+              alignment: const Alignment(0, -0.85), // move further up (near top area)
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.search_off, size: 64, color: Colors.grey[500]),
+                  const SizedBox(height: 12),
+                  Text(
+                    'لا توجد إعلانات للعرض حالياً',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[700]),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => ref.read(publicAdsProvider.notifier).fetchAds(refresh: true),
+                    child: const Text('تحديث'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.read(publicAdsProvider.notifier).fetchAds(refresh: true),
-                child: const Text('إعادة المحاولة'),
-              ),
-            ],
+            ),
           ),
         );
       }
