@@ -26,8 +26,8 @@ class HomeTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final publicState = ref.watch(publicAdsProvider);
 
-    // Trigger initial load of public ads when entering the tab if not already loaded
-    if (publicState.ads.isEmpty && !publicState.isLoading && publicState.error == null) {
+    // Trigger initial load of public ads when entering the tab if not already initialized
+    if (!publicState.initialized && !publicState.isLoading) {
       Future.microtask(() => ref.read(publicAdsProvider.notifier).fetchAds(refresh: true));
     }
 
@@ -122,6 +122,30 @@ class HomeTab extends ConsumerWidget {
             const SizedBox(height: 8),
             ElevatedButton(onPressed: () => ref.read(publicAdsProvider.notifier).fetchAds(refresh: true), child: const Text('إعادة المحاولة')),
           ],
+        );
+      }
+
+      // Handle case: backend returned no ads (empty result) and not loading.
+      if (!state.isLoading && state.ads.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 36.0, horizontal: 20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.search_off, size: 64, color: Colors.grey[500]),
+              const SizedBox(height: 12),
+              Text(
+                'لا توجد إعلانات للعرض حالياً',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => ref.read(publicAdsProvider.notifier).fetchAds(refresh: true),
+                child: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
         );
       }
 
@@ -303,8 +327,38 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
     }
 
     if (_images.isEmpty) {
-      // No images yet: show a compact framed shimmer placeholder using Card
-      // so the shadow matches HomeAdCard (elevation: 2, rounded).
+      // If still loading, show shimmer placeholder. If loading finished but
+      // there are no images from backend, show an empty-state banner.
+      if (state.isLoading) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Card(
+            elevation: 2,
+            color: AppTheme.surfaceColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              height: 180,
+              child: Center(
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      // Not loading and no images -> show friendly empty banner
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Card(
@@ -315,17 +369,16 @@ class _AdsImageCarouselState extends ConsumerState<AdsImageCarousel> {
           child: SizedBox(
             height: 180,
             child: Center(
-              child: Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.photo_library_outlined, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 8),
+                  Text(
+                    'لا توجد صور للعرض',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
-                ),
+                ],
               ),
             ),
           ),

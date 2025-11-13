@@ -7,6 +7,7 @@ class PublicAdsState {
   final List<UserAd> ads;
   final List<Map<String, dynamic>> images;
   final bool isLoading;
+  final bool initialized;
   final String? error;
   final int currentPage;
   final int totalAds;
@@ -16,6 +17,7 @@ class PublicAdsState {
     this.ads = const [],
     this.images = const [],
     this.isLoading = false,
+    this.initialized = false,
     this.error,
     this.currentPage = 1,
     this.totalAds = 0,
@@ -26,6 +28,7 @@ class PublicAdsState {
     List<UserAd>? ads,
     List<Map<String, dynamic>>? images,
     bool? isLoading,
+  bool? initialized,
     String? error,
     int? currentPage,
     int? totalAds,
@@ -35,6 +38,7 @@ class PublicAdsState {
       ads: ads ?? this.ads,
       images: images ?? this.images,
       isLoading: isLoading ?? this.isLoading,
+      initialized: initialized ?? this.initialized,
       error: error,
       currentPage: currentPage ?? this.currentPage,
       totalAds: totalAds ?? this.totalAds,
@@ -50,7 +54,9 @@ class PublicAdsNotifier extends StateNotifier<PublicAdsState> {
 
   Future<void> fetchAds({bool refresh = false, int limit = 15}) async {
     if (refresh) {
-      state = PublicAdsState(isLoading: true);
+      // Mark as initialized to avoid repeatedly triggering initial load
+      // from the UI when the backend legitimately returns an empty list.
+      state = PublicAdsState(isLoading: true, initialized: true);
     } else if (state.isLoading || !state.hasMore) {
       return;
     }
