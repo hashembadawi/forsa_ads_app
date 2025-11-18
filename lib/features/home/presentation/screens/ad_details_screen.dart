@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../data/models/ad_details.dart';
 import '../../../../core/widgets/async_image_with_shimmer.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -244,35 +245,53 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (widget.ad.location != null && widget.ad.location!.coordinates.isNotEmpty)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Container(
-                                  height: 200,
-                                  color: Colors.grey[200],
-                                  child: Center(
-                                    child: Text('خريطة: ${widget.ad.location!.coordinates.join(', ')}'),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                ElevatedButton.icon(
-                                  onPressed: () async {
-                                    final coords = widget.ad.location!.coordinates;
-                                    // assume coords = [lat, lng]
-                                    final lat = coords.isNotEmpty ? coords[0] : 0.0;
-                                    final lng = coords.length > 1 ? coords[1] : 0.0;
-                                    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح الخرائط')));
-                                    }
-                                  },
-                                  icon: const Icon(Icons.map),
-                                  label: const Text('فتح في الخرائط'),
-                                ),
-                              ],
-                            )
+                            Builder(builder: (ctx) {
+                              // Use the coordinates exactly as returned by the backend.
+                              // The backend stores GeoJSON Points as [longitude, latitude].
+                              // We interpret accordingly: coords[0] = longitude, coords[1] = latitude.
+                              final coords = widget.ad.location!.coordinates;
+                              double lat = 0.0, lng = 0.0;
+                              if (coords.length >= 2) {
+                                lng = coords[0];
+                                lat = coords[1];
+                              } else if (coords.isNotEmpty) {
+                                // single value: treat as latitude fallback
+                                lat = coords[0];
+                              }
+
+                              void openDirections() async {
+                                // Try app-first (comgooglemaps / geo), then web fallback.
+                                // Use precise coordinates (lat, lng) derived from backend values.
+                                final appUri = Uri.parse('comgooglemaps://?center=$lat,$lng');
+                                final geoUri = Uri.parse('geo:$lat,$lng?q=$lat,$lng');
+                                final webUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+                                try {
+                                  if (await canLaunchUrl(appUri)) {
+                                    await launchUrl(appUri, mode: LaunchMode.externalApplication);
+                                    return;
+                                  }
+                                } catch (_) {}
+                                try {
+                                  if (await canLaunchUrl(geoUri)) {
+                                    await launchUrl(geoUri, mode: LaunchMode.externalApplication);
+                                    return;
+                                  }
+                                } catch (_) {}
+                                if (await canLaunchUrl(webUri)) {
+                                  await launchUrl(webUri, mode: LaunchMode.externalApplication);
+                                  return;
+                                }
+                                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('تعذر فتح الخرائط')));
+                              }
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  LocationMapWid(latitude: lat, longitude: lng, onDirectionsTap: openDirections),
+                                  const SizedBox(height: 12),
+                                ],
+                              );
+                            })
                           else
                             const Text('لا يوجد موقع متوفر'),
                         ],
@@ -329,6 +348,80 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
             child: Center(child: Image.memory(bytes, fit: BoxFit.contain)),
           );
         },
+      ),
+    );
+  }
+}
+
+// Map widget to show ad location with a directions button.
+class LocationMapWid extends StatelessWidget {
+  final double latitude;
+  final double longitude;
+  final VoidCallback onDirectionsTap;
+
+  const LocationMapWid({
+    super.key,
+    required this.latitude,
+    required this.longitude,
+    required this.onDirectionsTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final LatLng adLocation = LatLng(latitude, longitude);
+    return Container(
+      height: 300,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Column(
+          children: [
+            Expanded(
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: adLocation,
+                  zoom: 15.0,
+                ),
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('adLocation'),
+                    position: adLocation,
+                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+                  ),
+                },
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                onTap: (_) => onDirectionsTap(),
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[600],
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(8),
+                  bottomRight: Radius.circular(8),
+                ),
+              ),
+              child: GestureDetector(
+                onTap: onDirectionsTap,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.directions, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'الاتجاهات عبر خرائط جوجل',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
