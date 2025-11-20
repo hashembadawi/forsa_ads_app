@@ -1,7 +1,9 @@
- import 'package:flutter/material.dart';
+import 'dart:convert';
 
-// Note: keep imports minimal for this screen. Backend-driven option lists
-// will be wired later; avoid incorrect relative imports that cause build errors.
+import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+
+import '../../../../core/ui/notifications.dart';
 
 class SearchOptionsScreen extends StatefulWidget {
   const SearchOptionsScreen({Key? key}) : super(key: key);
@@ -38,7 +40,119 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
   @override
   void initState() {
     super.initState();
-    // TODO: fetch options from backend (cities, regions, categories, currencies)
+    // Fetch options from backend when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadOptions();
+    });
+  }
+
+  bool _loadingOptions = false;
+
+  Future<void> _loadOptions() async {
+    setState(() => _loadingOptions = true);
+    final notifyCtx = context;
+    try {
+      Notifications.showLoading(notifyCtx, message: 'جاري التحميل ...');
+      final dio = Dio(BaseOptions(receiveTimeout: const Duration(seconds: 20), connectTimeout: const Duration(seconds: 20)));
+      final resp = await dio.get('https://sahbo-app-api.onrender.com/api/options/');
+
+      dynamic raw = resp.data;
+      try {
+        if (raw is String) raw = jsonDecode(raw);
+      } catch (_) {}
+
+      if (raw is! Map) throw Exception('استجابة غير متوقعة من الخادم');
+
+      final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
+
+      // currencies
+      final List<dynamic> currenciesRaw = (data['currencies'] as List<dynamic>?) ?? [];
+      final List<String> currencies = [];
+      for (final c in currenciesRaw) {
+        try {
+          final name = c['name']?.toString() ?? '';
+          if (name.isNotEmpty) currencies.add(name);
+        } catch (_) {}
+      }
+
+      // categories
+      final List<dynamic> categoriesRaw = (data['categories'] as List<dynamic>?) ?? [];
+      final Map<int, String> catById = {};
+      final List<String> categories = [];
+      for (final c in categoriesRaw) {
+        try {
+          final id = c['id'] as int?;
+          final name = c['name']?.toString() ?? '';
+          if (id != null && name.isNotEmpty) {
+            catById[id] = name;
+            categories.add(name);
+          }
+        } catch (_) {}
+      }
+
+      // subCategories grouped by category name
+      final List<dynamic> subRaw = (data['subCategories'] as List<dynamic>?) ?? [];
+      final Map<String, List<String>> subcats = {};
+      for (final s in subRaw) {
+        try {
+          final cid = s['categoryId'] as int?;
+          final sname = s['name']?.toString() ?? '';
+          if (cid != null && sname.isNotEmpty) {
+            final cname = catById[cid];
+            if (cname != null) {
+              subcats.putIfAbsent(cname, () => []).add(sname);
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Province (cities) and majorAreas (regions)
+      final List<dynamic> provRaw = (data['Province'] as List<dynamic>?) ?? [];
+      final Map<int, String> provById = {};
+      final List<String> cities = [];
+      for (final p in provRaw) {
+        try {
+          final id = p['id'] as int?;
+          final name = p['name']?.toString() ?? '';
+          if (id != null && name.isNotEmpty) {
+            provById[id] = name;
+            cities.add(name);
+          }
+        } catch (_) {}
+      }
+
+      final List<dynamic> areasRaw = (data['majorAreas'] as List<dynamic>?) ?? [];
+      final Map<String, List<String>> regionsByCity = {};
+      for (final a in areasRaw) {
+        try {
+          final pid = a['ProvinceId'] as int?;
+          final name = a['name']?.toString() ?? '';
+          if (pid != null && name.isNotEmpty) {
+            final cityName = provById[pid];
+            if (cityName != null) {
+              regionsByCity.putIfAbsent(cityName, () => []).add(name);
+            }
+          }
+        } catch (_) {}
+      }
+
+      setState(() {
+        _currencies = currencies;
+        _categories = categories;
+        _subcats = subcats;
+        _cities = cities;
+        _regionsByCity = regionsByCity;
+        _loadingOptions = false;
+      });
+      Notifications.hideLoading(notifyCtx);
+    } catch (e) {
+      try {
+        Notifications.hideLoading(notifyCtx);
+      } catch (_) {}
+      setState(() => _loadingOptions = false);
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      Notifications.showError(context, msg);
+    }
   }
 
   @override
@@ -53,8 +167,10 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('خيارات البحث')),
-      body: SafeArea(
-        child: Column(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
           children: [
             Expanded(
               child: ListView(
@@ -285,7 +401,16 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
               ),
             ),
           ],
-        ),
+            ),
+          ),
+          if (_loadingOptions)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.25),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+        ],
       ),
     );
   }
