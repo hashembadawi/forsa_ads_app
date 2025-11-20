@@ -322,41 +322,75 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                           const Divider(height: 1, thickness: 1),
                           const SizedBox(height: 12),
 
-                          // City and Region (no frames, separated by bullet)
+                          // City and Region with icons
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Text(
-                              widget.ad.regionName != null && widget.ad.regionName!.isNotEmpty
-                                  ? '${widget.ad.cityName}  •  ${widget.ad.regionName}'
-                                  : widget.ad.cityName,
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(fontSize: 15, color: Colors.black87),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              textDirection: TextDirection.rtl,
+                              children: [
+                                Icon(Icons.place, size: 18, color: Colors.black54),
+                                const SizedBox(width: 8),
+                                Text(
+                                  widget.ad.regionName != null && widget.ad.regionName!.isNotEmpty
+                                      ? '${widget.ad.cityName}  •  ${widget.ad.regionName}'
+                                      : widget.ad.cityName,
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(fontSize: 15, color: Colors.black87),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 12),
                           const Divider(height: 1, thickness: 1),
                           const SizedBox(height: 12),
 
-                          // Category and Subcategory
+                          // Category and Subcategory with icon
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Text(
-                              '${widget.ad.categoryName}  •  ${widget.ad.subCategoryName}',
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(fontSize: 15, color: Colors.black87),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              textDirection: TextDirection.rtl,
+                              children: [
+                                const Icon(Icons.category, size: 18, color: Colors.black54),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${widget.ad.categoryName}  •  ${widget.ad.subCategoryName}',
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(fontSize: 15, color: Colors.black87),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 12),
                           const Divider(height: 1, thickness: 1),
                           const SizedBox(height: 12),
 
-                          // For sale / For rent  •  Delivery
+                          // For sale / For rent  •  Delivery with icons
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Text(
-                              '${widget.ad.forSale ? 'للبيع' : 'للإيجار'}  •  ${widget.ad.deliveryService ? 'يوجد توصيل' : 'بدون توصيل'}',
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(fontSize: 15, color: Colors.black87),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              textDirection: TextDirection.rtl,
+                              children: [
+                                Row(
+                                  textDirection: TextDirection.rtl,
+                                  children: [
+                                    Icon(widget.ad.forSale ? Icons.sell : Icons.house, size: 18, color: Colors.black54),
+                                    const SizedBox(width: 6),
+                                    Text(widget.ad.forSale ? 'للبيع' : 'للإيجار', style: const TextStyle(fontSize: 15, color: Colors.black87)),
+                                  ],
+                                ),
+                                const SizedBox(width: 16),
+                                Row(
+                                  textDirection: TextDirection.rtl,
+                                  children: [
+                                    Icon(Icons.local_shipping, size: 18, color: Colors.black54),
+                                    const SizedBox(width: 6),
+                                    Text(widget.ad.deliveryService ? 'يوجد توصيل' : 'بدون توصيل', style: const TextStyle(fontSize: 15, color: Colors.black87)),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -600,6 +634,7 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
