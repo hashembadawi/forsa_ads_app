@@ -151,12 +151,13 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
     );
   }
 
+
   Future<void> _submitReport(BuildContext ctx, String reason) async {
     try {
       final appState = ref.read(appStateProvider);
       final token = appState.userToken;
       if (token == null || token.isEmpty) {
-        Notifications.showError(ctx, 'يجب تسجيل الدخول لإرسال بلاغ');
+        Notifications.showSnack(ctx, 'يجب تسجيل الدخول لإرسال بلاغ', type: NotificationType.error);
         return;
       }
 
@@ -165,39 +166,40 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
 
-      final uri = Uri.parse('http://sahbo-app-api.onrender.com/api/reports/submit');
+      final uri = Uri.parse('https://sahbo-app-api.onrender.com/api/reports/submit');
       final body = jsonEncode({
         'adId': widget.ad.id,
         'userId': userId,
         'reason': reason,
+        'description': '',
       });
 
+      // print bash of request
       final resp = await http.post(uri, headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       }, body: body);
-
       Notifications.hideLoading(ctx);
 
       if (resp.statusCode >= 200 && resp.statusCode < 300) {
         try {
           final data = jsonDecode(resp.body);
           if (data is Map && data['success'] == true) {
-            Notifications.showSuccess(ctx, 'تم إرسال البلاغ للإدارة');
+            Notifications.showSnack(ctx, 'تم إرسال البلاغ للإدارة', type: NotificationType.success);
             return;
           }
         } catch (_) {}
         // Fallback success message when backend doesn't return expected JSON
-        Notifications.showSuccess(ctx, 'تم إرسال البلاغ للإدارة');
+        Notifications.showSnack(ctx, 'تم إرسال البلاغ للإدارة', type: NotificationType.success);
         return;
       }
 
-      Notifications.showError(ctx, 'فشل إرسال البلاغ، حاول مرة أخرى');
+      Notifications.showSnack(ctx, 'فشل إرسال البلاغ، حاول مرة أخرى', type: NotificationType.error);
     } catch (e) {
       try {
         Notifications.hideLoading(ctx);
       } catch (_) {}
-      Notifications.showError(ctx, 'حدث خطأ أثناء إرسال البلاغ');
+      Notifications.showSnack(ctx, 'حدث خطأ أثناء إرسال البلاغ', type: NotificationType.error);
     }
   }
 
