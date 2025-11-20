@@ -8,11 +8,16 @@ import '../../../../core/constants/strings.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/ui/notifications.dart';
+import '../../../../core/ui/app_keys.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../data/models/ad_details.dart';
+import '../widgets/home_ad_card.dart';
+import '../../data/models/user_ad.dart';
+import '../../data/services/user_ads_service.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/widgets/async_image_with_shimmer.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -302,6 +307,48 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
         Notifications.hideLoading(ctx);
       } catch (_) {}
       Notifications.showSnack(ctx, 'حدث خطأ أثناء إضافة للمفضلة', type: NotificationType.error);
+    }
+  }
+
+  Future<void> _openRelatedAd(UserAd selected) async {
+    // Use appNavigatorKey if available (global navigator), otherwise local router
+    final notifyCtx = appNavigatorKey.currentContext ?? context;
+    final fallbackRouter = GoRouter.of(context);
+
+    try {
+      Notifications.showLoading(notifyCtx, message: 'جاري التحميل...');
+      final dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+      final service = UserAdsService(dio);
+      final appState = ref.read(appStateProvider);
+      late final AdDetails fetched;
+      if (appState.isUserLoggedIn && appState.userToken != null && appState.userToken!.isNotEmpty) {
+        fetched = await service.fetchAdDetailsForUser(adId: selected.id, token: appState.userToken!);
+      } else {
+        fetched = await service.fetchAdDetails(adId: selected.id);
+      }
+
+      Notifications.hideLoading(notifyCtx);
+
+      final globalCtx = appNavigatorKey.currentContext;
+      if (globalCtx != null) {
+        GoRouter.of(globalCtx).push(AppRoutes.adDetails, extra: fetched);
+      } else {
+        fallbackRouter.push(AppRoutes.adDetails, extra: fetched);
+      }
+    } catch (e) {
+      try {
+        Notifications.hideLoading(notifyCtx);
+      } catch (_) {}
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      try {
+        Notifications.showError(notifyCtx, msg);
+      } catch (_) {}
     }
   }
 
@@ -622,6 +669,32 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                               ],
                             ),
                           ),
+                          const SizedBox(height: 12),
+
+                          // Related ads section (top 5 similar ads returned by backend)
+                          if (widget.ad.relatedAds.isNotEmpty) ...[
+                            Text('إعلانات مشابهة', style: Theme.of(context).textTheme.titleMedium),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 120,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: widget.ad.relatedAds.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                itemBuilder: (ctx, idx) {
+                                  final related = widget.ad.relatedAds[idx];
+                                  return SizedBox(
+                                    width: 300,
+                                    child: HomeAdCard(
+                                      ad: related,
+                                      onTap: (selected) => _openRelatedAd(selected),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                         ],
                       ),
                     ),

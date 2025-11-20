@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'user_ad.dart';
 
 class LocationPoint {
   final String type;
@@ -49,6 +50,7 @@ class AdDetails {
   final bool deliveryService;
   final bool isSpecial;
   final bool isFavorite;
+  final List<UserAd> relatedAds;
   final int v;
 
   AdDetails({
@@ -79,6 +81,7 @@ class AdDetails {
     required this.deliveryService,
     required this.isSpecial,
     this.isFavorite = false,
+    this.relatedAds = const [],
     required this.v,
   });
 
@@ -151,6 +154,9 @@ class AdDetails {
       deliveryService: json['deliveryService'] ?? false,
       isSpecial: json['isSpecial'] ?? false,
       isFavorite: json['isFavorite'] ?? json['is_favorite'] ?? false,
+      relatedAds: (json['relatedAds'] as List<dynamic>?)
+              ?.map((ad) => ad is Map<String, dynamic> ? UserAd.fromJson(ad) : UserAd.fromJson(Map<String, dynamic>.from(ad)))
+              .toList() ?? [],
       v: json['__v'] is int ? json['__v'] as int : int.tryParse((json['__v'] ?? '0').toString()) ?? 0,
     );
   }
