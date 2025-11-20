@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../../../core/ui/notifications.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../data/models/ad_details.dart';
@@ -55,9 +57,119 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
     return s;
   }
 
+  String _adLink() {
+    return 'https://syria-market-web.onrender.com/${widget.ad.id}';
+  }
+
+  Future<void> _shareViaWhatsApp(String link, BuildContext ctx) async {
+    final messenger = ScaffoldMessenger.of(ctx);
+    final appUri = Uri.parse('whatsapp://send?text=${Uri.encodeComponent(link)}');
+    final webUri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(link)}');
+    try {
+      if (await canLaunchUrl(appUri)) {
+        await launchUrl(appUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (await canLaunchUrl(webUri)) {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+    messenger.showSnackBar(const SnackBar(content: Text('تعذر فتح واتس آب')));
+  }
+
+  Future<void> _shareViaTelegram(String link, BuildContext ctx) async {
+    final messenger = ScaffoldMessenger.of(ctx);
+    final appUri = Uri.parse('tg://msg?text=${Uri.encodeComponent(link)}');
+    final webUri = Uri.parse('https://t.me/share/url?url=${Uri.encodeComponent(link)}');
+    try {
+      if (await canLaunchUrl(appUri)) {
+        await launchUrl(appUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (await canLaunchUrl(webUri)) {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+    messenger.showSnackBar(const SnackBar(content: Text('تعذر فتح تيليجرام')));
+  }
+
+  Future<void> _copyLink(String link, BuildContext ctx) async {
+    await Clipboard.setData(ClipboardData(text: link));
+    // Use the app's top snack notification for consistency
+    Notifications.showSnack(ctx, 'تم نسخ رابط الإعلان', type: NotificationType.success);
+  }
+
+  void _showShareOptions(BuildContext ctx) {
+    final link = _adLink();
+    showModalBottomSheet(
+      context: ctx,
+      builder: (sCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.message, color: Color(0xFF25D366)),
+              title: const Text('عبر واتس اب'),
+              onTap: () {
+                Navigator.of(sCtx).pop();
+                _shareViaWhatsApp(link, ctx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.send, color: Colors.blue),
+              title: const Text('عبر تيليجرام'),
+              onTap: () {
+                Navigator.of(sCtx).pop();
+                _shareViaTelegram(link, ctx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: const Text('نسخ الرابط'),
+              onTap: () {
+                Navigator.of(sCtx).pop();
+                _copyLink(link, ctx);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmReport(BuildContext ctx) {
+    showDialog(
+      context: ctx,
+      builder: (dCtx) {
+        return AlertDialog(
+          title: const Text('إبلاغ عن الإعلان'),
+          content: const Text('هل تريد إرسال بلاغ عن هذا الإعلان؟ سيتم مراجعته من قبل الفريق.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dCtx).pop(), child: const Text('إلغاء')),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dCtx).pop();
+                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('تم إرسال البلاغ')));
+              },
+              child: const Text('إرسال'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   late final List<String> _allImages;
   final PageController _controller = PageController();
   int _currentImageIndex = 0;
+  bool _isFavorite = false;
 
   @override
   void initState() {
@@ -88,7 +200,7 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
             children: [
               // Image area with counter and tap-to-open
               SizedBox(
-                height: 320,
+                height: 240,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -247,7 +359,80 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                               style: const TextStyle(fontSize: 15, color: Colors.black87),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 12),
+
+                          // Action buttons container (icon above label)
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: () => _showShareOptions(context),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        Icon(Icons.share, color: Colors.white, size: 22),
+                                        SizedBox(height: 6),
+                                        Text('مشاركة', style: TextStyle(color: Colors.white)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: () {
+                                      setState(() => _isFavorite = !_isFavorite);
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isFavorite ? 'أضيف للمفضلة' : 'أزيل من المفضلة')));
+                                    },
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _isFavorite ? Colors.red : null),
+                                        const SizedBox(height: 6),
+                                        const Text('تفضيل'),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: () => _confirmReport(context),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        Icon(Icons.report, color: Colors.orange),
+                                        SizedBox(height: 6),
+                                        Text('ابلاغ'),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
