@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/ui/notifications.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../data/models/ad_details.dart';
 import '../../../../core/widgets/async_image_with_shimmer.dart';
@@ -149,25 +151,94 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
     );
   }
 
+  Future<void> _submitReport(BuildContext ctx, String reason) async {
+    try {
+      final appState = ref.read(appStateProvider);
+      final token = appState.userToken;
+      if (token == null || token.isEmpty) {
+        Notifications.showError(ctx, 'يجب تسجيل الدخول لإرسال بلاغ');
+        return;
+      }
+
+      Notifications.showLoading(ctx, message: 'جارٍ إرسال البلاغ...');
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? '';
+
+      final uri = Uri.parse('http://sahbo-app-api.onrender.com/api/reports/submit');
+      final body = jsonEncode({
+        'adId': widget.ad.id,
+        'userId': userId,
+        'reason': reason,
+      });
+
+      final resp = await http.post(uri, headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      }, body: body);
+
+      Notifications.hideLoading(ctx);
+
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        try {
+          final data = jsonDecode(resp.body);
+          if (data is Map && data['success'] == true) {
+            Notifications.showSuccess(ctx, 'تم إرسال البلاغ للإدارة');
+            return;
+          }
+        } catch (_) {}
+        // Fallback success message when backend doesn't return expected JSON
+        Notifications.showSuccess(ctx, 'تم إرسال البلاغ للإدارة');
+        return;
+      }
+
+      Notifications.showError(ctx, 'فشل إرسال البلاغ، حاول مرة أخرى');
+    } catch (e) {
+      try {
+        Notifications.hideLoading(ctx);
+      } catch (_) {}
+      Notifications.showError(ctx, 'حدث خطأ أثناء إرسال البلاغ');
+    }
+  }
+
   void _confirmReport(BuildContext ctx) {
-    showDialog(
+    final reasons = <String>[
+      'محتوى غير مناسب',
+      'إعلان مخادع أو احتيالي',
+      'منتج مقلد أو مزيف',
+      'معلومات اتصال خاطئة',
+      'إعلان مكرر',
+    ];
+
+    showModalBottomSheet(
       context: ctx,
-      builder: (dCtx) {
-        return AlertDialog(
-          title: const Text('إبلاغ عن الإعلان'),
-          content: const Text('هل تريد إرسال بلاغ عن هذا الإعلان؟ سيتم مراجعته من قبل الفريق.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(dCtx).pop(), child: const Text('إلغاء')),
-            TextButton(
-              onPressed: () {
-                Navigator.of(dCtx).pop();
-                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('تم إرسال البلاغ')));
-              },
-              child: const Text('إرسال'),
+      builder: (sCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(child: Text('اختر سبب الإبلاغ', style: Theme.of(ctx).textTheme.titleMedium)),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(sCtx).pop()),
+                ],
+              ),
             ),
+            const Divider(height: 1),
+            ...reasons.map((r) {
+              return ListTile(
+                title: Text(r),
+                onTap: () {
+                  Navigator.of(sCtx).pop();
+                  _submitReport(ctx, r);
+                },
+              );
+            }).toList(),
+            const SizedBox(height: 8),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
