@@ -1,6 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/providers/app_state_provider.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../core/constants/strings.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/ui/notifications.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,15 +14,15 @@ import '../../data/models/ad_details.dart';
 import '../../../../core/widgets/async_image_with_shimmer.dart';
 import '../../../../core/theme/app_theme.dart';
 
-class AdDetailsScreen extends StatefulWidget {
+class AdDetailsScreen extends ConsumerStatefulWidget {
   final AdDetails ad;
   const AdDetailsScreen({super.key, required this.ad});
 
   @override
-  State<AdDetailsScreen> createState() => _AdDetailsScreenState();
+  ConsumerState<AdDetailsScreen> createState() => _AdDetailsScreenState();
 }
 
-class _AdDetailsScreenState extends State<AdDetailsScreen> {
+class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
   Uint8List? _tryDecode(String content) {
     try {
       var s = content.trim();
@@ -432,10 +437,18 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                                       padding: const EdgeInsets.symmetric(vertical: 12),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
-                                    onPressed: () {
-                                      setState(() => _isFavorite = !_isFavorite);
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isFavorite ? 'أضيف للمفضلة' : 'أزيل من المفضلة')));
-                                    },
+                                      onPressed: () async {
+                                        final appState = ref.read(appStateProvider);
+                                        if (!appState.isUserLoggedIn) {
+                                          final ok = await Notifications.showConfirm(context, AppStrings.loginRequiredMessage, confirmText: AppStrings.loginLabel, cancelText: AppStrings.no);
+                                          if (ok == true) {
+                                            await context.pushNamed(RouteNames.login);
+                                          }
+                                          return;
+                                        }
+                                        setState(() => _isFavorite = !_isFavorite);
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isFavorite ? 'أضيف للمفضلة' : 'أزيل من المفضلة')));
+                                      },
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
@@ -453,7 +466,17 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                                       padding: const EdgeInsets.symmetric(vertical: 12),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
-                                    onPressed: () => _confirmReport(context),
+                                      onPressed: () async {
+                                        final appState = ref.read(appStateProvider);
+                                        if (!appState.isUserLoggedIn) {
+                                          final ok = await Notifications.showConfirm(context, AppStrings.loginRequiredMessage, confirmText: AppStrings.loginLabel, cancelText: AppStrings.no);
+                                          if (ok == true) {
+                                            await context.pushNamed(RouteNames.login);
+                                          }
+                                          return;
+                                        }
+                                        _confirmReport(context);
+                                      },
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: const [
