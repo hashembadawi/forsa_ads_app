@@ -249,6 +249,62 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
   int _currentImageIndex = 0;
   bool _isFavorite = false;
 
+  Future<void> _submitFavorite(BuildContext ctx) async {
+    try {
+      final appState = ref.read(appStateProvider);
+      final token = appState.userToken;
+      if (token == null || token.isEmpty) {
+        Notifications.showSnack(ctx, 'يجب تسجيل الدخول لإضافة للمفضلة', type: NotificationType.error);
+        return;
+      }
+
+      Notifications.showLoading(ctx, message: 'جارٍ إضافة للمفضلة...');
+
+      final uri = Uri.parse('https://sahbo-app-api.onrender.com/api/favorites/add');
+      final body = jsonEncode({'adId': widget.ad.id});
+
+      final resp = await http.post(uri, headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      }, body: body);
+
+      Notifications.hideLoading(ctx);
+
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        try {
+          final data = jsonDecode(resp.body);
+          if (data is Map && data['success'] == true) {
+            setState(() => _isFavorite = true);
+            Notifications.showSnack(ctx, 'أضيف للمفضلة', type: NotificationType.success);
+            return;
+          } else if (data is Map && data['message'] != null) {
+            Notifications.showSnack(ctx, data['message'].toString(), type: NotificationType.error);
+            return;
+          }
+        } catch (_) {}
+        // fallback success
+        setState(() => _isFavorite = true);
+        Notifications.showSnack(ctx, 'أضيف للمفضلة', type: NotificationType.success);
+        return;
+      }
+
+      // non-2xx
+      try {
+        final data = jsonDecode(resp.body);
+        if (data is Map && data['message'] != null) {
+          Notifications.showSnack(ctx, data['message'].toString(), type: NotificationType.error);
+          return;
+        }
+      } catch (_) {}
+      Notifications.showSnack(ctx, 'فشل إضافة للمفضلة (${resp.statusCode})', type: NotificationType.error);
+    } catch (e) {
+      try {
+        Notifications.hideLoading(ctx);
+      } catch (_) {}
+      Notifications.showSnack(ctx, 'حدث خطأ أثناء إضافة للمفضلة', type: NotificationType.error);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -511,17 +567,16 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
                                       onPressed: () async {
-                                        final appState = ref.read(appStateProvider);
-                                        if (!appState.isUserLoggedIn) {
-                                          final ok = await Notifications.showConfirm(context, AppStrings.loginRequiredMessage, confirmText: AppStrings.loginLabel, cancelText: AppStrings.no);
-                                          if (ok == true) {
-                                            await context.pushNamed(RouteNames.login);
+                                          final appState = ref.read(appStateProvider);
+                                          if (!appState.isUserLoggedIn) {
+                                            final ok = await Notifications.showConfirm(context, AppStrings.loginRequiredMessage, confirmText: AppStrings.loginLabel, cancelText: AppStrings.no);
+                                            if (ok == true) {
+                                              await context.pushNamed(RouteNames.login);
+                                            }
+                                            return;
                                           }
-                                          return;
-                                        }
-                                        setState(() => _isFavorite = !_isFavorite);
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isFavorite ? 'أضيف للمفضلة' : 'أزيل من المفضلة')));
-                                      },
+                                          await _submitFavorite(context);
+                                        },
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
