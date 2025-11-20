@@ -19,6 +19,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/ui/app_keys.dart';
 import '../../../../core/widgets/async_image_with_shimmer.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../screens/search_options_screen.dart';
 
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
@@ -43,6 +44,36 @@ class HomeTab extends ConsumerWidget {
             children: [
               // Image slider (replaces previous greeting section)
               AdsImageCarousel(),
+              const SizedBox(height: 12),
+
+              // Search bar (tappable) placed under the slider
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SearchOptionsScreen()));
+                  },
+                  child: Container(
+                    height: 52,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6)],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Colors.black54),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text('ابحث عن إعلان أو اختيار خيارات البحث...', style: TextStyle(color: Colors.grey[700]))),
+                        const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black26),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               const SizedBox(height: 12),
 
               // Recent ads
