@@ -376,8 +376,14 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
 
       final globalCtx = appNavigatorKey.currentContext;
       if (globalCtx != null) {
+        // Ensure back returns to home: navigate to home first, then push details
+        GoRouter.of(globalCtx).go(AppRoutes.home);
         GoRouter.of(globalCtx).push(AppRoutes.adDetails, extra: fetched);
       } else {
+        // Fallback: replace current details with new details so back goes to previous screen
+        try {
+          fallbackRouter.go(AppRoutes.home);
+        } catch (_) {}
         fallbackRouter.push(AppRoutes.adDetails, extra: fetched);
       }
     } catch (e) {
