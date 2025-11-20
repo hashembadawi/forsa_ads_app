@@ -476,4 +476,50 @@ class UserAdsService {
       throw Exception('حدث خطأ غير متوقع: $e');
     }
   }
+
+  /// Remove an ad from the user's favorites list.
+  /// Backend expects DELETE to `/api/favorites/delete` with a JSON body
+  /// containing `userId` and `adId` and an Authorization header.
+  Future<void> deleteFavorite({
+    required String token,
+    required String userId,
+    required String adId,
+  }) async {
+    try {
+      final response = await _dio.delete(
+        '$baseUrl/api/favorites/delete',
+        data: {
+          'userId': userId,
+          'adId': adId,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('فشل إزالة الإعلان من المفضلات');
+      }
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('لا يوجد اتصال بالإنترنت');
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى');
+      } else if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
+        throw Exception('خطأ في الخادم. يرجى المحاولة لاحقاً');
+      } else {
+        throw Exception('حدث خطأ أثناء إزالة المفضلة');
+      }
+    } catch (e) {
+      throw Exception('حدث خطأ غير متوقع: $e');
+    }
+  }
 }

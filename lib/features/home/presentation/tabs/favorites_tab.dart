@@ -15,6 +15,7 @@ import '../widgets/home_ad_card.dart';
 import '../../../../core/ui/app_keys.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FavoritesTab extends ConsumerStatefulWidget {
   const FavoritesTab({super.key});
@@ -189,7 +190,66 @@ class _FavoritesTabState extends ConsumerState<FavoritesTab> {
                           itemBuilder: (ctx, idx) {
                             if (idx < _ads.length) {
                               final ad = _ads[idx];
-                              return HomeAdCard(ad: ad, onTap: (_) => _openAd(ad));
+                              return Row(
+                                children: [
+                                  Expanded(child: HomeAdCard(ad: ad, onTap: (_) => _openAd(ad))),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 44,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                      tooltip: 'حذف من المفضلة',
+                                      onPressed: () async {
+                                        final confirm = await Notifications.showConfirm(
+                                          context,
+                                          'هل تود إزالة هذا الإعلان من المفضلة؟',
+                                          confirmText: AppStrings.yes,
+                                          cancelText: AppStrings.cancel,
+                                        );
+
+                                        if (confirm != true) return;
+
+                                        try {
+                                          final notifyCtx = appNavigatorKey.currentContext ?? context;
+                                          Notifications.showLoading(notifyCtx, message: 'جاري الحذف...');
+
+                                          final dio = Dio(
+                                            BaseOptions(
+                                              connectTimeout: const Duration(seconds: 15),
+                                              receiveTimeout: const Duration(seconds: 15),
+                                              sendTimeout: const Duration(seconds: 15),
+                                            ),
+                                          );
+                                          final service = UserAdsService(dio);
+                                          final appState = ref.read(appStateProvider);
+                                          final token = appState.userToken;
+                                          final prefs = await SharedPreferences.getInstance();
+                                          final userId = prefs.getString('userId') ?? '';
+
+                                          if (token == null || token.isEmpty || userId.isEmpty) {
+                                            Notifications.hideLoading(notifyCtx);
+                                            Notifications.showError(notifyCtx, 'يجب تسجيل الدخول لإجراء هذا الإجراء');
+                                            return;
+                                          }
+
+                                          await service.deleteFavorite(token: token, userId: userId, adId: ad.id);
+                                          Notifications.hideLoading(notifyCtx);
+
+                                          // refresh list after deletion
+                                          await _loadFavorites(refresh: true);
+                                        } catch (e) {
+                                          final msg = e.toString().replaceFirst('Exception: ', '');
+                                          try {
+                                            final notifyCtx = appNavigatorKey.currentContext ?? context;
+                                            Notifications.hideLoading(notifyCtx);
+                                            Notifications.showError(notifyCtx, msg);
+                                          } catch (_) {}
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              );
                             }
                             // Load more button
                             return SizedBox(
