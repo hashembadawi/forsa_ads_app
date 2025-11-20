@@ -205,6 +205,77 @@ class UserAdsService {
     }
   }
 
+  /// Fetch user's favorites (requires Authorization header)
+  Future<Map<String, dynamic>> fetchFavorites({
+    required String token,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '$baseUrl/api/favorites/my-favorites',
+        queryParameters: {'page': page, 'limit': limit},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        dynamic raw = response.data;
+        try {
+          if (raw is String) raw = jsonDecode(raw);
+        } catch (_) {}
+
+        Map<String, dynamic> data = {};
+        if (raw is Map) data = Map<String, dynamic>.from(raw);
+
+        final List<UserAd> ads = [];
+        if (data['favorites'] is List) {
+          for (final f in data['favorites']) {
+            try {
+              final adRaw = f is Map && f['ad'] != null ? f['ad'] : f;
+              if (adRaw is String) {
+                final decoded = jsonDecode(adRaw);
+                if (decoded is Map) ads.add(UserAd.fromJson(Map<String, dynamic>.from(decoded)));
+              } else if (adRaw is Map) {
+                ads.add(UserAd.fromJson(Map<String, dynamic>.from(adRaw)));
+              }
+            } catch (_) {}
+          }
+        }
+
+        return {
+          'ads': ads,
+          'total': data['total'] ?? 0,
+          'page': data['page'] ?? page,
+          'limit': data['limit'] ?? limit,
+        };
+      }
+
+      throw Exception('تعذر جلب المفضلات');
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('لا يوجد اتصال بالإنترنت');
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى');
+      } else if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
+        throw Exception('خطأ في الخادم. يرجى المحاولة لاحقاً');
+      } else {
+        throw Exception('حدث خطأ أثناء جلب المفضلات');
+      }
+    } catch (e) {
+      throw Exception('حدث خطأ غير متوقع: $e');
+    }
+  }
+
   /// Fetch a single ad by id
   Future<UserAd> fetchAdById({required String adId}) async {
     try {
