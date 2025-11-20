@@ -1,9 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'dart:async';
 
 import '../../../../core/ui/notifications.dart';
+import '../../data/models/app_options.dart';
+import '../../data/services/options_service.dart';
 
 class SearchOptionsScreen extends StatefulWidget {
   const SearchOptionsScreen({Key? key}) : super(key: key);
@@ -20,22 +21,25 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
 
   // Example fields (populated later by backend)
   final TextEditingController _nameController = TextEditingController();
-  String? _selectedCity;
-  String? _selectedRegion;
-  String? _selectedCategory;
-  String? _selectedSubCategory;
-  String? _selectedCurrency;
+  Timer? _suggestTimer;
+  List<String> _suggestions = [];
+  bool _loadingSuggestions = false;
+  int? _selectedCityId;
+  int? _selectedRegionId;
+  int? _selectedCategoryId;
+  int? _selectedSubCategoryId;
+  int? _selectedCurrencyId;
   String _saleType = 'sale'; // or 'rent'
   bool _delivery = false;
   final TextEditingController _minPrice = TextEditingController();
   final TextEditingController _maxPrice = TextEditingController();
 
-  // Placeholder lists - will be filled by backend later
-  List<String> _cities = [];
-  Map<String, List<String>> _regionsByCity = {};
-  List<String> _categories = [];
-  Map<String, List<String>> _subcats = {};
-  List<String> _currencies = [];
+  // Options model populated from backend
+  AppOptions? _options;
+  // Keys for scrolling to expanded sections
+  final GlobalKey _nameKey = GlobalKey();
+  final GlobalKey _locationKey = GlobalKey();
+  final GlobalKey _advancedKey = GlobalKey();
 
   @override
   void initState() {
@@ -52,96 +56,13 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
     setState(() => _loadingOptions = true);
     final notifyCtx = context;
     try {
-      Notifications.showLoading(notifyCtx, message: 'جاري التحميل ...');
+      Notifications.showLoading(notifyCtx, message: 'جاري التحميل...');
       final dio = Dio(BaseOptions(receiveTimeout: const Duration(seconds: 20), connectTimeout: const Duration(seconds: 20)));
-      final resp = await dio.get('https://sahbo-app-api.onrender.com/api/options/');
-
-      dynamic raw = resp.data;
-      try {
-        if (raw is String) raw = jsonDecode(raw);
-      } catch (_) {}
-
-      if (raw is! Map) throw Exception('استجابة غير متوقعة من الخادم');
-
-      final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
-
-      // currencies
-      final List<dynamic> currenciesRaw = (data['currencies'] as List<dynamic>?) ?? [];
-      final List<String> currencies = [];
-      for (final c in currenciesRaw) {
-        try {
-          final name = c['name']?.toString() ?? '';
-          if (name.isNotEmpty) currencies.add(name);
-        } catch (_) {}
-      }
-
-      // categories
-      final List<dynamic> categoriesRaw = (data['categories'] as List<dynamic>?) ?? [];
-      final Map<int, String> catById = {};
-      final List<String> categories = [];
-      for (final c in categoriesRaw) {
-        try {
-          final id = c['id'] as int?;
-          final name = c['name']?.toString() ?? '';
-          if (id != null && name.isNotEmpty) {
-            catById[id] = name;
-            categories.add(name);
-          }
-        } catch (_) {}
-      }
-
-      // subCategories grouped by category name
-      final List<dynamic> subRaw = (data['subCategories'] as List<dynamic>?) ?? [];
-      final Map<String, List<String>> subcats = {};
-      for (final s in subRaw) {
-        try {
-          final cid = s['categoryId'] as int?;
-          final sname = s['name']?.toString() ?? '';
-          if (cid != null && sname.isNotEmpty) {
-            final cname = catById[cid];
-            if (cname != null) {
-              subcats.putIfAbsent(cname, () => []).add(sname);
-            }
-          }
-        } catch (_) {}
-      }
-
-      // Province (cities) and majorAreas (regions)
-      final List<dynamic> provRaw = (data['Province'] as List<dynamic>?) ?? [];
-      final Map<int, String> provById = {};
-      final List<String> cities = [];
-      for (final p in provRaw) {
-        try {
-          final id = p['id'] as int?;
-          final name = p['name']?.toString() ?? '';
-          if (id != null && name.isNotEmpty) {
-            provById[id] = name;
-            cities.add(name);
-          }
-        } catch (_) {}
-      }
-
-      final List<dynamic> areasRaw = (data['majorAreas'] as List<dynamic>?) ?? [];
-      final Map<String, List<String>> regionsByCity = {};
-      for (final a in areasRaw) {
-        try {
-          final pid = a['ProvinceId'] as int?;
-          final name = a['name']?.toString() ?? '';
-          if (pid != null && name.isNotEmpty) {
-            final cityName = provById[pid];
-            if (cityName != null) {
-              regionsByCity.putIfAbsent(cityName, () => []).add(name);
-            }
-          }
-        } catch (_) {}
-      }
+      final service = OptionsService(dio);
+      final options = await service.fetchOptions();
 
       setState(() {
-        _currencies = currencies;
-        _categories = categories;
-        _subcats = subcats;
-        _cities = cities;
-        _regionsByCity = regionsByCity;
+        _options = options;
         _loadingOptions = false;
       });
       Notifications.hideLoading(notifyCtx);
@@ -155,12 +76,51 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
     }
   }
 
+  Future<void> _fetchSuggestions(String q) async {
+    try {
+      final dio = Dio();
+      final resp = await dio.get('https://sahbo-app-api.onrender.com/api/ads/suggested-ads', queryParameters: {'q': q, 'limit': 5});
+      final data = resp.data as List<dynamic>?;
+      setState(() {
+        _suggestions = data != null ? data.map((e) => e.toString()).toList() : [];
+        _loadingSuggestions = false;
+      });
+    } catch (e) {
+      setState(() {
+        _suggestions = [];
+        _loadingSuggestions = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _minPrice.dispose();
     _maxPrice.dispose();
+    _suggestTimer?.cancel();
     super.dispose();
+  }
+
+  // Helpers to clear fields when switching search mode
+  void _clearName() {
+    _nameController.clear();
+    _suggestions = [];
+  }
+
+  void _clearLocation() {
+    _selectedCityId = null;
+    _selectedRegionId = null;
+  }
+
+  void _clearAdvanced() {
+    _selectedCategoryId = null;
+    _selectedSubCategoryId = null;
+    _selectedCurrencyId = null;
+    _saleType = 'sale';
+    _delivery = false;
+    _minPrice.clear();
+    _maxPrice.clear();
   }
 
   @override
@@ -176,198 +136,305 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  ExpansionTile(
-                    initiallyExpanded: _nameOpen,
-                    title: const Text('بحث بالاسم'),
+                  ExpansionPanelList.radio(
+                    initialOpenPanelValue: _nameOpen ? 'name' : (_locationOpen ? 'location' : (_advancedOpen ? 'advanced' : null)),
+                    expansionCallback: (index, isExpanded) {
+                      setState(() {
+                        if (index == 0) {
+                          _nameOpen = !isExpanded;
+                          _locationOpen = false;
+                          _advancedOpen = false;
+                          if (_nameOpen) {
+                            _clearLocation();
+                            _clearAdvanced();
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              final ctx = _nameKey.currentContext;
+                              if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), alignment: 0.1);
+                            });
+                          }
+                        } else if (index == 1) {
+                          _locationOpen = !isExpanded;
+                          _nameOpen = false;
+                          _advancedOpen = false;
+                          if (_locationOpen) {
+                            _clearName();
+                            _clearAdvanced();
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              final ctx = _locationKey.currentContext;
+                              if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), alignment: 0.1);
+                            });
+                          }
+                        } else if (index == 2) {
+                          _advancedOpen = !isExpanded;
+                          _nameOpen = false;
+                          _locationOpen = false;
+                          if (_advancedOpen) {
+                            _clearName();
+                            _clearLocation();
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              final ctx = _advancedKey.currentContext;
+                              if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), alignment: 0.1);
+                            });
+                          }
+                        }
+                      });
+                    },
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: TextField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'اسم الإعلان أو الكلمات المفتاحية',
-                            border: OutlineInputBorder(),
+                      ExpansionPanelRadio(
+                        value: 'name',
+                        canTapOnHeader: true,
+                        headerBuilder: (ctx, isOpen) => Container(
+                          color: Theme.of(ctx).colorScheme.primary.withOpacity(0.06),
+                          child: const ListTile(title: Text('بحث بالاسم')),
+                        ),
+                        body: Padding(
+                          key: _nameKey,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _nameController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'اسم الإعلان أو الكلمات المفتاحية',
+                                      ),
+                                      onChanged: (v) {
+                                        // debounce suggestions
+                                        _suggestTimer?.cancel();
+                                        if (v.trim().isEmpty) {
+                                          setState(() {
+                                            _suggestions = [];
+                                            _loadingSuggestions = false;
+                                          });
+                                          return;
+                                        }
+                                        setState(() => _loadingSuggestions = true);
+                                        _suggestTimer = Timer(const Duration(milliseconds: 350), () async {
+                                          await _fetchSuggestions(v.trim());
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: _loadingSuggestions ? const CircularProgressIndicator(strokeWidth: 2) : const SizedBox.shrink(),
+                                  ),
+                                ],
+                              ),
+                              if (_suggestions.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Card(
+                                  elevation: 1,
+                                  child: ListView.separated(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemBuilder: (ctx, i) {
+                                      final s = _suggestions[i];
+                                      return ListTile(
+                                        title: Text(s),
+                                        onTap: () {
+                                          setState(() {
+                                            _nameController.text = s;
+                                            _suggestions = [];
+                                          });
+                                        },
+                                      );
+                                    },
+                                    separatorBuilder: (_, __) => const Divider(height: 1),
+                                    itemCount: _suggestions.length,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
+                        // expansion handled by ExpansionPanelList.radio.expansionCallback
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  ExpansionTile(
-                    initiallyExpanded: _locationOpen,
-                    title: const Text('بحث حسب المدينة والمنطقة'),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // City dropdown
-                            InputDecorator(
-                              decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'المحافظة'),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _selectedCity,
-                                  hint: const Text('اختر المحافظة'),
-                                  items: _cities.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                                  onChanged: (v) {
-                                    setState(() {
-                                      _selectedCity = v;
-                                      _selectedRegion = null;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Region dropdown (depends on selected city)
-                            InputDecorator(
-                              decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'المنطقة'),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _selectedRegion,
-                                  hint: const Text('اختر المنطقة'),
-                                  items: _selectedCity != null && _regionsByCity[_selectedCity] != null
-                                      ? _regionsByCity[_selectedCity]!.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList()
-                                      : [],
-                                  onChanged: (v) => setState(() => _selectedRegion = v),
-                                ),
-                              ),
-                            ),
-                          ],
+                      ExpansionPanelRadio(
+                        value: 'location',
+                        canTapOnHeader: true,
+                        headerBuilder: (ctx, isOpen) => Container(
+                          color: Theme.of(ctx).colorScheme.secondary.withOpacity(0.06),
+                          child: const ListTile(title: Text('بحث حسب المدينة والمنطقة')),
                         ),
+                        body: Padding(
+                          key: _locationKey,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // City dropdown (Province)
+                              InputDecorator(
+                                decoration: const InputDecoration(labelText: 'المحافظة'),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<int>(
+                                    isExpanded: true,
+                                    value: _selectedCityId,
+                                    hint: const Text('اختر المحافظة'),
+                                    items: (_options?.provinces ?? []).map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
+                                    onChanged: (v) {
+                                      setState(() {
+                                        _selectedCityId = v;
+                                        _selectedRegionId = null;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Region dropdown (depends on selected province)
+                              InputDecorator(
+                                decoration: const InputDecoration(labelText: 'المنطقة'),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<int>(
+                                    isExpanded: true,
+                                    value: _selectedRegionId,
+                                    hint: const Text('اختر المنطقة'),
+                                    items: (_options?.majorAreas.where((a) => a.provinceId == _selectedCityId).toList() ?? [])
+                                        .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
+                                        .toList(),
+                                    onChanged: (v) => setState(() => _selectedRegionId = v),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // expansion handled by ExpansionPanelList.radio.expansionCallback
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  ExpansionTile(
-                    initiallyExpanded: _advancedOpen,
-                    title: const Text('بحث متقدم'),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Categories and subcategories
-                            const Text('التصنيف'),
-                            const SizedBox(height: 8),
-                            InputDecorator(
-                              decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'القسم الرئيسي'),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _selectedCategory,
-                                  hint: const Text('اختر القسم'),
-                                  items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                                  onChanged: (v) {
-                                    setState(() {
-                                      _selectedCategory = v;
-                                      _selectedSubCategory = null;
-                                    });
-                                  },
+                      ExpansionPanelRadio(
+                        value: 'advanced',
+                        canTapOnHeader: true,
+                        headerBuilder: (ctx, isOpen) => Container(
+                          color: Theme.of(ctx).colorScheme.tertiary.withOpacity(0.06),
+                          child: const ListTile(title: Text('بحث متقدم')),
+                        ),
+                        body: Padding(
+                          key: _advancedKey,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Categories and subcategories
+                              const Text('التصنيف'),
+                              const SizedBox(height: 8),
+                              InputDecorator(
+                                decoration: const InputDecoration(labelText: 'القسم الرئيسي'),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<int>(
+                                    isExpanded: true,
+                                    value: _selectedCategoryId,
+                                    hint: const Text('اختر القسم'),
+                                    items: (_options?.categories ?? []).map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                                    onChanged: (v) {
+                                      setState(() {
+                                        _selectedCategoryId = v;
+                                        _selectedSubCategoryId = null;
+                                      });
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            InputDecorator(
-                              decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'التصنيف الفرعي'),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _selectedSubCategory,
-                                  hint: const Text('اختر التصنيف الفرعي'),
-                                  items: _selectedCategory != null && _subcats[_selectedCategory] != null
-                                      ? _subcats[_selectedCategory]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList()
-                                      : [],
-                                  onChanged: (v) => setState(() => _selectedSubCategory = v),
+                              const SizedBox(height: 12),
+                              InputDecorator(
+                                decoration: const InputDecoration(labelText: 'التصنيف الفرعي'),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<int>(
+                                    isExpanded: true,
+                                    value: _selectedSubCategoryId,
+                                    hint: const Text('اختر التصنيف الفرعي'),
+                                    items: (_options?.subCategories.where((s) => s.categoryId == _selectedCategoryId).toList() ?? [])
+                                        .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                                        .toList(),
+                                    onChanged: (v) => setState(() => _selectedSubCategoryId = v),
+                                  ),
                                 ),
                               ),
-                            ),
 
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 12),
 
-                            // Currency
-                            InputDecorator(
-                              decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'العملة'),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _selectedCurrency,
-                                  hint: const Text('اختر العملة'),
-                                  items: _currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                                  onChanged: (v) => setState(() => _selectedCurrency = v),
+                              // Currency
+                              InputDecorator(
+                                decoration: const InputDecoration(labelText: 'العملة'),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<int>(
+                                    isExpanded: true,
+                                    value: _selectedCurrencyId,
+                                    hint: const Text('اختر العملة'),
+                                    items: (_options?.currencies ?? []).map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                                    onChanged: (v) => setState(() => _selectedCurrencyId = v),
+                                  ),
                                 ),
                               ),
-                            ),
 
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 12),
 
-                            // Sale type and delivery
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: InputDecorator(
-                                    decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'نوع الإعلان'),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        isExpanded: true,
-                                        value: _saleType,
-                                        items: const [
-                                          DropdownMenuItem(value: 'sale', child: Text('للبيع')),
-                                          DropdownMenuItem(value: 'rent', child: Text('للإيجار')),
-                                        ],
-                                        onChanged: (v) => setState(() => _saleType = v ?? 'sale'),
+                              // Sale type and delivery
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: InputDecorator(
+                                      decoration: const InputDecoration(labelText: 'نوع الإعلان'),
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<String>(
+                                          isExpanded: true,
+                                          value: _saleType,
+                                          items: const [
+                                            DropdownMenuItem(value: 'sale', child: Text('للبيع')),
+                                            DropdownMenuItem(value: 'rent', child: Text('للإيجار')),
+                                          ],
+                                          onChanged: (v) => setState(() => _saleType = v ?? 'sale'),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: InputDecorator(
-                                    decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'التوصيل'),
-                                    child: SwitchListTile(
-                                      contentPadding: EdgeInsets.zero,
-                                      title: Text(_delivery ? 'مع توصيل' : 'بدون توصيل'),
-                                      value: _delivery,
-                                      onChanged: (v) => setState(() => _delivery = v),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: InputDecorator(
+                                      decoration: const InputDecoration(labelText: 'التوصيل'),
+                                      child: SwitchListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        title: Text(_delivery ? 'مع توصيل' : 'بدون توصيل'),
+                                        value: _delivery,
+                                        onChanged: (v) => setState(() => _delivery = v),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
 
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 12),
 
-                            // Price range
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _minPrice,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'الحد الأدنى للسعر'),
+                              // Price range
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _minPrice,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(labelText: 'الحد الأدنى للسعر'),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _maxPrice,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'الحد الأقصى للسعر'),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _maxPrice,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(labelText: 'الحد الأقصى للسعر'),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
+                        // expansion handled by ExpansionPanelList.radio.expansionCallback
                       ),
                     ],
                   ),
@@ -383,6 +450,10 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('إلغاء'),
                     ),
@@ -390,8 +461,31 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                       onPressed: () {
-                        // TODO: return search criteria or perform search
+                        // If name mode is selected, navigate to results screen
+                        if (_nameOpen) {
+                          final query = _nameController.text.trim();
+                          if (query.isEmpty) {
+                            Notifications.showSnack(context, 'أدخل كلمة للبحث');
+                            return;
+                          }
+                          // schedule navigation after current frame/animations complete
+                          // add a small delay to avoid navigator locked errors during other transitions
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              // search operation cancelled by user flow: do not navigate
+                              if (!mounted) return;
+                              Navigator.of(context).pop();
+                            });
+                          });
+                          return;
+                        }
+
+                        // For other modes we'll just pop for now (search wiring later)
                         Navigator.of(context).pop();
                       },
                       child: const Text('بحث'),
