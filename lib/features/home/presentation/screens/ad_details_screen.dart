@@ -35,6 +35,26 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
     return null;
   }
 
+  String _normalizePhoneForTel(String raw) {
+    var s = raw.trim();
+    // keep plus if present, remove other non-digit chars
+    s = s.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (s.isEmpty) return s;
+    if (!s.startsWith('+')) s = '+$s';
+    return s;
+  }
+
+  String _normalizePhoneForWhatsApp(String raw) {
+    var s = raw.trim();
+    // whatsapp wa.me expects digits only (no plus or symbols)
+    s = s.replaceAll(RegExp(r'[^0-9]'), '');
+    // remove leading zeros which may conflict with country code expectations
+    while (s.startsWith('0')) {
+      s = s.substring(1);
+    }
+    return s;
+  }
+
   late final List<String> _allImages;
   final PageController _controller = PageController();
   int _currentImageIndex = 0;
@@ -301,6 +321,71 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                 ),
               ),
             ],
+          ),
+          bottomNavigationBar: SafeArea(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final raw = widget.ad.userPhone;
+                        final waNumber = _normalizePhoneForWhatsApp(raw);
+                        if (waNumber.isEmpty) {
+                          messenger.showSnackBar(const SnackBar(content: Text('رقم المعلن غير متوفر')));
+                          return;
+                        }
+                        final appUri = Uri.parse('whatsapp://send?phone=$waNumber');
+                        final webUri = Uri.parse('https://wa.me/$waNumber');
+                        try {
+                          if (await canLaunchUrl(appUri)) {
+                            await launchUrl(appUri, mode: LaunchMode.externalApplication);
+                            return;
+                          }
+                        } catch (_) {}
+                        try {
+                          if (await canLaunchUrl(webUri)) {
+                            await launchUrl(webUri, mode: LaunchMode.externalApplication);
+                            return;
+                          }
+                        } catch (_) {}
+                        messenger.showSnackBar(const SnackBar(content: Text('تعذر فتح واتس آب')));
+                      },
+                      icon: const Icon(Icons.message),
+                      label: const Text('دردش واتس'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final raw = widget.ad.userPhone;
+                        final tel = _normalizePhoneForTel(raw);
+                        if (tel.isEmpty) {
+                          messenger.showSnackBar(const SnackBar(content: Text('رقم المعلن غير متوفر')));
+                          return;
+                        }
+                        final telUri = Uri.parse('tel:$tel');
+                        try {
+                          if (await canLaunchUrl(telUri)) {
+                            await launchUrl(telUri, mode: LaunchMode.externalApplication);
+                            return;
+                          }
+                        } catch (_) {}
+                        messenger.showSnackBar(const SnackBar(content: Text('تعذر فتح تطبيق الهاتف')));
+                      },
+                      icon: const Icon(Icons.call),
+                      label: const Text('اتصال'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
