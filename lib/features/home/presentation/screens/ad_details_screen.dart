@@ -262,7 +262,48 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
         Notifications.showSnack(ctx, 'يجب تسجيل الدخول لإضافة للمفضلة', type: NotificationType.error);
         return;
       }
+      // If currently favorited -> send DELETE to remove from favorites
+      if (_isFavorite) {
+        Notifications.showLoading(ctx, message: 'جارٍ إزالة من المفضلة...');
+        final prefs = await SharedPreferences.getInstance();
+        final userId = prefs.getString('userId') ?? '';
+        final uri = Uri.parse('https://sahbo-app-api.onrender.com/api/favorites/delete');
+        final body = jsonEncode({'userId': userId, 'adId': widget.ad.id});
 
+        final resp = await http.delete(uri, headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        }, body: body);
+
+        Notifications.hideLoading(ctx);
+
+        if (resp.statusCode >= 200 && resp.statusCode < 300) {
+          try {
+            final data = jsonDecode(resp.body);
+            if (data is Map && (data['success'] == true || data['deleted'] == true)) {
+              setState(() => _isFavorite = false);
+              return;
+            }
+          } catch (_) {}
+          // fallback success
+          setState(() => _isFavorite = false);
+          return;
+        }
+
+        // non-2xx
+        try {
+          final data = jsonDecode(resp.body);
+          if (data is Map && data['message'] != null) {
+            Notifications.showSnack(ctx, data['message'].toString(), type: NotificationType.error);
+            return;
+          }
+        } catch (_) {}
+        Notifications.showSnack(ctx, 'فشل إزالة من المفضلة (${resp.statusCode})', type: NotificationType.error);
+        return;
+      }
+
+      // Otherwise, add to favorites (existing behavior)
       Notifications.showLoading(ctx, message: 'جارٍ إضافة للمفضلة...');
 
       final uri = Uri.parse('https://sahbo-app-api.onrender.com/api/favorites/add');
@@ -280,7 +321,6 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
           final data = jsonDecode(resp.body);
           if (data is Map && data['success'] == true) {
             setState(() => _isFavorite = true);
-            Notifications.showSnack(ctx, 'أضيف للمفضلة', type: NotificationType.success);
             return;
           } else if (data is Map && data['message'] != null) {
             Notifications.showSnack(ctx, data['message'].toString(), type: NotificationType.error);
@@ -289,7 +329,6 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
         } catch (_) {}
         // fallback success
         setState(() => _isFavorite = true);
-        Notifications.showSnack(ctx, 'أضيف للمفضلة', type: NotificationType.success);
         return;
       }
 
