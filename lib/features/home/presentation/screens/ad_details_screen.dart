@@ -310,6 +310,10 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
     super.initState();
     // Compose images: thumbnail first (if present) then other images
     _allImages = [];
+    // Initialize favorite state from incoming ad (if provided by backend)
+    try {
+      _isFavorite = widget.ad.isFavorite;
+    } catch (_) {}
     if (widget.ad.thumbnail.isNotEmpty) _allImages.add(widget.ad.thumbnail);
     for (final s in widget.ad.images) {
       if (s.isNotEmpty) _allImages.add(s);

@@ -311,6 +311,62 @@ class UserAdsService {
     }
   }
 
+  /// Fetch ad details for an authenticated user and include `isFavorite` flag.
+  Future<AdDetails> fetchAdDetailsForUser({required String adId, required String token}) async {
+    try {
+      final response = await _dio.get(
+        '$baseUrl/api/ads/getAdByIdFavorite/$adId',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        dynamic raw = response.data;
+        try {
+          if (raw is String) raw = jsonDecode(raw);
+        } catch (_) {}
+
+        Map<String, dynamic> data = {};
+        if (raw is Map && raw['ad'] != null) {
+          var adRaw = raw['ad'];
+          try {
+            if (adRaw is String) adRaw = jsonDecode(adRaw);
+          } catch (_) {}
+          if (adRaw is Map) data = Map<String, dynamic>.from(adRaw);
+        } else if (raw is Map) {
+          data = Map<String, dynamic>.from(raw);
+        }
+
+        return AdDetails.fromJson(data);
+      } else if (response.statusCode == 404) {
+        throw Exception('لم يتم العثور على الإعلان');
+      } else {
+        throw Exception('تعذر جلب بيانات الإعلان');
+      }
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('لا يوجد اتصال بالإنترنت');
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى');
+      } else if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
+        throw Exception('خطأ في الخادم. يرجى المحاولة لاحقاً');
+      } else {
+        throw Exception('حدث خطأ أثناء جلب تفاصيل الإعلان');
+      }
+    } catch (e) {
+      throw Exception('حدث خطأ غير متوقع: $e');
+    }
+  }
+
   Future<void> deleteAd({
     required String adId,
     required String token,

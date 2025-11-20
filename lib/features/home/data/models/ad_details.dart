@@ -48,6 +48,7 @@ class AdDetails {
   final bool forSale;
   final bool deliveryService;
   final bool isSpecial;
+  final bool isFavorite;
   final int v;
 
   AdDetails({
@@ -77,6 +78,7 @@ class AdDetails {
     required this.forSale,
     required this.deliveryService,
     required this.isSpecial,
+    this.isFavorite = false,
     required this.v,
   });
 
@@ -148,6 +150,7 @@ class AdDetails {
       forSale: json['forSale'] ?? true,
       deliveryService: json['deliveryService'] ?? false,
       isSpecial: json['isSpecial'] ?? false,
+      isFavorite: json['isFavorite'] ?? json['is_favorite'] ?? false,
       v: json['__v'] is int ? json['__v'] as int : int.tryParse((json['__v'] ?? '0').toString()) ?? 0,
     );
   }

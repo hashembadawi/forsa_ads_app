@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../widgets/home_ad_card.dart';
 import '../../data/services/user_ads_service.dart';
+import '../../../../shared/providers/app_state_provider.dart';
 import '../../../../core/ui/notifications.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/ui/app_keys.dart';
@@ -186,7 +187,13 @@ class HomeTab extends ConsumerWidget {
                     );
                     final service = UserAdsService(dio);
                     // Fetch full ad details (new model)
-                    final fetched = await service.fetchAdDetails(adId: selected.id);
+                    final appState = ref.read(appStateProvider);
+                    late final fetched;
+                    if (appState.isUserLoggedIn && appState.userToken != null && appState.userToken!.isNotEmpty) {
+                      fetched = await service.fetchAdDetailsForUser(adId: selected.id, token: appState.userToken!);
+                    } else {
+                      fetched = await service.fetchAdDetails(adId: selected.id);
+                    }
                     Notifications.hideLoading(notifyCtx);
 
                     // Prefer global navigator context if available, otherwise
