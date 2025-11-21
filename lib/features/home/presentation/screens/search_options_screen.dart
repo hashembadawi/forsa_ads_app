@@ -5,6 +5,7 @@ import 'dart:async';
 import '../../../../core/ui/notifications.dart';
 import '../../data/models/app_options.dart';
 import '../../data/services/options_service.dart';
+import 'search_results_screen.dart';
 
 class SearchOptionsScreen extends StatefulWidget {
   const SearchOptionsScreen({Key? key}) : super(key: key);
@@ -476,10 +477,12 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                           // schedule navigation after current frame/animations complete
                           // add a small delay to avoid navigator locked errors during other transitions
                           WidgetsBinding.instance.addPostFrameCallback((_) {
+                            // small delay to avoid navigator locked assertions
                             Future.delayed(const Duration(milliseconds: 300), () {
-                              // search operation cancelled by user flow: do not navigate
                               if (!mounted) return;
-                              Navigator.of(context).pop();
+                              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                                builder: (_) => SearchResultsScreen(title: query),
+                              ));
                             });
                           });
                           return;
