@@ -74,7 +74,6 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
   }
 
   Future<void> _shareViaWhatsApp(String link, BuildContext ctx) async {
-    final messenger = ScaffoldMessenger.of(ctx);
     final appUri = Uri.parse('whatsapp://send?text=${Uri.encodeComponent(link)}');
     final webUri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(link)}');
     try {
@@ -89,11 +88,10 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
         return;
       }
     } catch (_) {}
-    messenger.showSnackBar(const SnackBar(content: Text('تعذر فتح واتس آب')));
+    Notifications.showError(ctx, 'تعذر فتح واتس آب');
   }
 
   Future<void> _shareViaTelegram(String link, BuildContext ctx) async {
-    final messenger = ScaffoldMessenger.of(ctx);
     final appUri = Uri.parse('tg://msg?text=${Uri.encodeComponent(link)}');
     final webUri = Uri.parse('https://t.me/share/url?url=${Uri.encodeComponent(link)}');
     try {
@@ -108,13 +106,12 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
         return;
       }
     } catch (_) {}
-    messenger.showSnackBar(const SnackBar(content: Text('تعذر فتح تيليجرام')));
+    Notifications.showError(ctx, 'تعذر فتح تيليجرام');
   }
 
   Future<void> _copyLink(String link, BuildContext ctx) async {
     await Clipboard.setData(ClipboardData(text: link));
-    // Use the app's top snack notification for consistency
-    Notifications.showSnack(ctx, 'تم نسخ رابط الإعلان', type: NotificationType.success);
+    // No UI change when copying link (silent copy per user request)
   }
 
   void _showShareOptions(BuildContext ctx) {
@@ -162,7 +159,7 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
       final appState = ref.read(appStateProvider);
       final token = appState.userToken;
       if (token == null || token.isEmpty) {
-        Notifications.showSnack(ctx, 'يجب تسجيل الدخول لإرسال بلاغ', type: NotificationType.error);
+        Notifications.showError(ctx, 'يجب تسجيل الدخول لإرسال بلاغ');
         return;
       }
 
@@ -190,21 +187,20 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
         try {
           final data = jsonDecode(resp.body);
           if (data is Map && data['success'] == true) {
-            Notifications.showSnack(ctx, 'تم إرسال البلاغ للإدارة', type: NotificationType.success);
+            Notifications.showSuccess(ctx, 'تم إرسال البلاغ للإدارة');
             return;
           }
         } catch (_) {}
         // Fallback success message when backend doesn't return expected JSON
-        Notifications.showSnack(ctx, 'تم إرسال البلاغ للإدارة', type: NotificationType.success);
+        Notifications.showSuccess(ctx, 'تم إرسال البلاغ للإدارة');
         return;
       }
-
-      Notifications.showSnack(ctx, 'فشل إرسال البلاغ، حاول مرة أخرى', type: NotificationType.error);
+      Notifications.showError(ctx, 'فشل إرسال البلاغ، حاول مرة أخرى');
     } catch (e) {
       try {
         Notifications.hideLoading(ctx);
       } catch (_) {}
-      Notifications.showSnack(ctx, 'حدث خطأ أثناء إرسال البلاغ', type: NotificationType.error);
+      Notifications.showError(ctx, 'حدث خطأ أثناء إرسال البلاغ');
     }
   }
 
@@ -259,7 +255,7 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
       final appState = ref.read(appStateProvider);
       final token = appState.userToken;
       if (token == null || token.isEmpty) {
-        Notifications.showSnack(ctx, 'يجب تسجيل الدخول لإضافة للمفضلة', type: NotificationType.error);
+        Notifications.showError(ctx, 'يجب تسجيل الدخول لإضافة للمفضلة');
         return;
       }
       // If currently favorited -> send DELETE to remove from favorites
@@ -294,12 +290,12 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
         // non-2xx
         try {
           final data = jsonDecode(resp.body);
-          if (data is Map && data['message'] != null) {
-            Notifications.showSnack(ctx, data['message'].toString(), type: NotificationType.error);
+                                if (data is Map && data['message'] != null) {
+            Notifications.showError(ctx, data['message'].toString());
             return;
           }
         } catch (_) {}
-        Notifications.showSnack(ctx, 'فشل إزالة من المفضلة (${resp.statusCode})', type: NotificationType.error);
+        Notifications.showError(ctx, 'فشل إزالة من المفضلة (${resp.statusCode})');
         return;
       }
 
@@ -319,11 +315,11 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
       if (resp.statusCode >= 200 && resp.statusCode < 300) {
         try {
           final data = jsonDecode(resp.body);
-          if (data is Map && data['success'] == true) {
+            if (data is Map && data['success'] == true) {
             setState(() => _isFavorite = true);
             return;
           } else if (data is Map && data['message'] != null) {
-            Notifications.showSnack(ctx, data['message'].toString(), type: NotificationType.error);
+            Notifications.showError(ctx, data['message'].toString());
             return;
           }
         } catch (_) {}
@@ -336,16 +332,16 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
       try {
         final data = jsonDecode(resp.body);
         if (data is Map && data['message'] != null) {
-          Notifications.showSnack(ctx, data['message'].toString(), type: NotificationType.error);
+          Notifications.showError(ctx, data['message'].toString());
           return;
         }
       } catch (_) {}
-      Notifications.showSnack(ctx, 'فشل إضافة للمفضلة (${resp.statusCode})', type: NotificationType.error);
+      Notifications.showError(ctx, 'فشل إضافة للمفضلة (${resp.statusCode})');
     } catch (e) {
       try {
         Notifications.hideLoading(ctx);
       } catch (_) {}
-      Notifications.showSnack(ctx, 'حدث خطأ أثناء إضافة للمفضلة', type: NotificationType.error);
+      Notifications.showError(ctx, 'حدث خطأ أثناء إضافة للمفضلة');
     }
   }
 
@@ -793,7 +789,7 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                                   await launchUrl(webUri, mode: LaunchMode.externalApplication);
                                   return;
                                 }
-                                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('تعذر فتح الخرائط')));
+                                Notifications.showError(ctx, 'تعذر فتح الخرائط');
                               }
 
                               return Column(
@@ -824,11 +820,10 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
                       onPressed: () async {
-                        final messenger = ScaffoldMessenger.of(context);
                         final raw = widget.ad.userPhone;
                         final waNumber = _normalizePhoneForWhatsApp(raw);
                         if (waNumber.isEmpty) {
-                          messenger.showSnackBar(const SnackBar(content: Text('رقم المعلن غير متوفر')));
+                          Notifications.showError(context, 'رقم المعلن غير متوفر');
                           return;
                         }
                         final appUri = Uri.parse('whatsapp://send?phone=$waNumber');
@@ -845,7 +840,7 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                             return;
                           }
                         } catch (_) {}
-                        messenger.showSnackBar(const SnackBar(content: Text('تعذر فتح واتس آب')));
+                        Notifications.showError(context, 'تعذر فتح واتس آب');
                       },
                       icon: const Icon(Icons.message),
                       label: const Text('دردش واتس'),
@@ -855,11 +850,10 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () async {
-                        final messenger = ScaffoldMessenger.of(context);
                         final raw = widget.ad.userPhone;
                         final tel = _normalizePhoneForTel(raw);
                         if (tel.isEmpty) {
-                          messenger.showSnackBar(const SnackBar(content: Text('رقم المعلن غير متوفر')));
+                          Notifications.showError(context, 'رقم المعلن غير متوفر');
                           return;
                         }
                         final telUri = Uri.parse('tel:$tel');
@@ -869,7 +863,7 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                             return;
                           }
                         } catch (_) {}
-                        messenger.showSnackBar(const SnackBar(content: Text('تعذر فتح تطبيق الهاتف')));
+                        Notifications.showError(context, 'تعذر فتح تطبيق الهاتف');
                       },
                       icon: const Icon(Icons.call),
                       label: const Text('اتصال'),
