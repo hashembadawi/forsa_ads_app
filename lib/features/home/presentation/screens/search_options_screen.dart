@@ -22,6 +22,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
 
   // Example fields (populated later by backend)
   final TextEditingController _nameController = TextEditingController();
+  String? _nameError;
   Timer? _suggestTimer;
   List<String> _suggestions = [];
   bool _loadingSuggestions = false;
@@ -199,10 +200,13 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                                   Expanded(
                                     child: TextField(
                                       controller: _nameController,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         labelText: 'اسم الإعلان أو الكلمات المفتاحية',
+                                        errorText: _nameError,
                                       ),
                                       onChanged: (v) {
+                                        // clear any previous field-level error when user types
+                                        if (_nameError != null) setState(() => _nameError = null);
                                         // debounce suggestions
                                         _suggestTimer?.cancel();
                                         if (v.trim().isEmpty) {
@@ -242,6 +246,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                                           setState(() {
                                             _nameController.text = s;
                                             _suggestions = [];
+                                            _nameError = null;
                                           });
                                         },
                                       );
@@ -471,7 +476,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                         if (_nameOpen) {
                           final query = _nameController.text.trim();
                           if (query.isEmpty) {
-                            Notifications.showSnack(context, 'أدخل كلمة للبحث');
+                            setState(() => _nameError = 'أدخل كلمة للبحث');
                             return;
                           }
                           // schedule navigation after current frame/animations complete
