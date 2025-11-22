@@ -16,6 +16,8 @@ import '../../../../core/ui/app_keys.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../shared/widgets/no_internet_widget.dart';
+import '../../../../shared/utils/network_utils.dart';
 
 class FavoritesTab extends ConsumerStatefulWidget {
   const FavoritesTab({super.key});
@@ -178,19 +180,21 @@ class _FavoritesTabState extends ConsumerState<FavoritesTab> {
                     );
                   },
                 )
-              : _error != null
-                  ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-                  : _ads.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(Icons.favorite_outline, size: 64, color: AppTheme.iconInactiveColor),
-                              SizedBox(height: 16),
-                              Text(AppStrings.favoritesEmpty),
-                            ],
-                          ),
-                        )
+                  : (looksLikeNoInternet(_error) && _ads.isEmpty)
+                      ? NoInternetWidget(onRetry: () async => await _loadFavorites(refresh: true))
+                      : _error != null
+                          ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+                          : _ads.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.favorite_outline, size: 64, color: AppTheme.iconInactiveColor),
+                                      SizedBox(height: 16),
+                                      Text(AppStrings.favoritesEmpty),
+                                    ],
+                                  ),
+                                )
                       : ListView.separated(
                           itemCount: _ads.length + (_total > _ads.length ? 1 : 0),
                           separatorBuilder: (_, __) => const SizedBox(height: 8),

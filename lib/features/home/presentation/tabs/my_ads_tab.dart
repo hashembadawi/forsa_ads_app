@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/strings.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/no_internet_widget.dart';
+import '../../../../shared/utils/network_utils.dart';
 import '../providers/user_ads_provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../widgets/user_ad_card.dart';
@@ -124,45 +126,10 @@ class _MyAdsTabState extends ConsumerState<MyAdsTab> {
   }
 
   Widget _buildBody(UserAdsState state) {
-    // Show no internet state
-    if (state.isNoInternet && state.ads.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.wifi_off_rounded,
-              size: 80,
-              color: AppTheme.iconInactiveColor,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'لا يوجد اتصال بالإنترنت',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 24),
-            AppButton(
-              text: 'إعادة المحاولة',
-              icon: Icons.refresh,
-              onPressed: () {
-                ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true);
-              },
-              size: AppButtonSize.large,
-            ),
-          ],
-        ),
+    // Show no internet state (also treat certain error messages as no-internet)
+    if ((state.isNoInternet || looksLikeNoInternet(state.error)) && state.ads.isEmpty) {
+      return NoInternetWidget(
+        onRetry: () => ref.read(userAdsProvider.notifier).fetchUserAds(refresh: true),
       );
     }
 

@@ -20,6 +20,8 @@ import '../../../../core/ui/app_keys.dart';
 import '../../../../core/widgets/async_image_with_shimmer.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../screens/search_options_screen.dart';
+import '../../../../shared/widgets/no_internet_widget.dart';
+import '../../../../shared/utils/network_utils.dart';
 
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
@@ -145,6 +147,10 @@ class HomeTab extends ConsumerWidget {
             );
           },
         );
+      }
+
+      if (looksLikeNoInternet(state.error) && state.ads.isEmpty) {
+        return NoInternetWidget(onRetry: () => ref.read(publicAdsProvider.notifier).fetchAds(refresh: true));
       }
 
       if (state.error != null && state.ads.isEmpty) {
