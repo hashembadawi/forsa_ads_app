@@ -6,6 +6,7 @@ import '../../../../core/ui/notifications.dart';
 import '../../data/models/app_options.dart';
 import '../../data/services/options_service.dart';
 import 'search_results_screen.dart';
+import '../../../../shared/widgets/app_button.dart';
 
 class SearchOptionsScreen extends StatefulWidget {
   const SearchOptionsScreen({Key? key}) : super(key: key);
@@ -38,7 +39,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> with SingleTi
   String? _subCategoryError;
   int? _selectedCurrencyId;
   String _saleType = 'sale';
-  bool _delivery = false;
+  bool _delivery = true;
   final TextEditingController _minPrice = TextEditingController();
   final TextEditingController _maxPrice = TextEditingController();
 
@@ -415,22 +416,17 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> with SingleTi
                   child: Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
+                        child: AppButton.outlined(
+                          text: 'إلغاء',
+                          fullWidth: true,
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('إلغاء'),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
+                        child: AppButton(
+                          text: 'بحث',
+                          fullWidth: true,
                           onPressed: () {
                             // Name mode
                             if (_mode == SearchMode.name) {
@@ -498,7 +494,6 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> with SingleTi
 
                             Navigator.of(context).pop();
                           },
-                          child: const Text('بحث'),
                         ),
                       ),
                     ],
