@@ -15,7 +15,28 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
   final String? title;
   final int? cityId;
   final int? regionId;
-  const SearchResultsScreen({Key? key, this.title, this.cityId, this.regionId}) : super(key: key);
+  // advanced
+  final int? categoryId;
+  final int? subCategoryId;
+  final String? forSale;
+  final String? deliveryService;
+  final String? priceMin;
+  final String? priceMax;
+  final int? currencyId;
+
+  const SearchResultsScreen({
+    Key? key,
+    this.title,
+    this.cityId,
+    this.regionId,
+    this.categoryId,
+    this.subCategoryId,
+    this.forSale,
+    this.deliveryService,
+    this.priceMin,
+    this.priceMax,
+    this.currencyId,
+  }) : super(key: key);
 
   @override
   ConsumerState<SearchResultsScreen> createState() => _SearchResultsScreenState();
@@ -50,6 +71,18 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           'https://sahbo-app-api.onrender.com/api/ads/search',
           queryParameters: {'cityId': widget.cityId, 'regionId': widget.regionId, 'page': 1, 'limit': 10},
         );
+        final data = resp.data as Map<String, dynamic>?;
+        adsJson = data?['ads'] as List<dynamic>? ?? [];
+      } else if (widget.categoryId != null && widget.subCategoryId != null) {
+        // advanced search
+        final params = <String, dynamic>{'categoryId': widget.categoryId, 'subCategoryId': widget.subCategoryId, 'page': 1, 'limit': 10};
+        if (widget.forSale != null) params['forSale'] = widget.forSale;
+        if (widget.deliveryService != null) params['deliveryService'] = widget.deliveryService;
+        if (widget.priceMin != null) params['priceMin'] = widget.priceMin;
+        if (widget.priceMax != null) params['priceMax'] = widget.priceMax;
+        if (widget.currencyId != null) params['currencyId'] = widget.currencyId;
+
+        resp = await dio.get('https://sahbo-app-api.onrender.com/api/ads/search-advance', queryParameters: params);
         final data = resp.data as Map<String, dynamic>?;
         adsJson = data?['ads'] as List<dynamic>? ?? [];
       } else if (widget.title != null && widget.title!.isNotEmpty) {

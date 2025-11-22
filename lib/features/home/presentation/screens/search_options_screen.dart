@@ -14,33 +14,39 @@ class SearchOptionsScreen extends StatefulWidget {
   State<SearchOptionsScreen> createState() => _SearchOptionsScreenState();
 }
 
-class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
-  // UI state for accordions
-  bool _nameOpen = true;
-  bool _locationOpen = false;
-  bool _advancedOpen = false;
+enum SearchMode { name, location, advanced }
 
-  // Example fields (populated later by backend)
+class _SearchOptionsScreenState extends State<SearchOptionsScreen> with SingleTickerProviderStateMixin {
+  // state
+  SearchMode _mode = SearchMode.name;
+
   final TextEditingController _nameController = TextEditingController();
-  String? _nameError;
+  final FocusNode _nameFocus = FocusNode();
   Timer? _suggestTimer;
   List<String> _suggestions = [];
   bool _loadingSuggestions = false;
+  String? _nameError;
+
   int? _selectedCityId;
   int? _selectedRegionId;
   String? _cityError;
   String? _regionError;
+
   int? _selectedCategoryId;
   int? _selectedSubCategoryId;
+  String? _categoryError;
+  String? _subCategoryError;
   int? _selectedCurrencyId;
-  String _saleType = 'sale'; // or 'rent'
+  String _saleType = 'sale';
   bool _delivery = false;
   final TextEditingController _minPrice = TextEditingController();
   final TextEditingController _maxPrice = TextEditingController();
 
-  // Options model populated from backend
   AppOptions? _options;
-  // Keys for scrolling to expanded sections
+  bool _loadingOptions = false;
+
+  late final TabController _tabController;
+
   final GlobalKey _nameKey = GlobalKey();
   final GlobalKey _locationKey = GlobalKey();
   final GlobalKey _advancedKey = GlobalKey();
@@ -48,25 +54,32 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch options from backend when screen opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadOptions();
-    });
+    _tabController = TabController(length: 3, vsync: this, initialIndex: _mode.index);
+    _tabController.addListener(_onTabChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadOptions());
   }
 
-  bool _loadingOptions = false;
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) {
+      final newMode = SearchMode.values[_tabController.index];
+      if (mounted) setState(() => _mode = newMode);
+      if (newMode == SearchMode.name) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => FocusScope.of(context).requestFocus(_nameFocus));
+      }
+    }
+  }
 
   Future<void> _loadOptions() async {
-    setState(() => _loadingOptions = true);
+    if (mounted) setState(() => _loadingOptions = true);
     final notifyCtx = context;
     try {
       Notifications.showLoading(notifyCtx, message: 'جاري التحميل...');
       final dio = Dio(BaseOptions(receiveTimeout: const Duration(seconds: 20), connectTimeout: const Duration(seconds: 20)));
       final service = OptionsService(dio);
-      final options = await service.fetchOptions();
-
+      final opts = await service.fetchOptions();
+      if (!mounted) return;
       setState(() {
-        _options = options;
+        _options = opts;
         _loadingOptions = false;
       });
       Notifications.hideLoading(notifyCtx);
@@ -74,7 +87,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
       try {
         Notifications.hideLoading(notifyCtx);
       } catch (_) {}
-      setState(() => _loadingOptions = false);
+      if (mounted) setState(() => _loadingOptions = false);
       final msg = e.toString().replaceFirst('Exception: ', '');
       Notifications.showError(context, msg);
     }
@@ -85,31 +98,23 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
       final dio = Dio();
       final resp = await dio.get('https://sahbo-app-api.onrender.com/api/ads/suggested-ads', queryParameters: {'q': q, 'limit': 5});
       final data = resp.data as List<dynamic>?;
+      if (!mounted) return;
       setState(() {
         _suggestions = data != null ? data.map((e) => e.toString()).toList() : [];
         _loadingSuggestions = false;
       });
     } catch (e) {
-      setState(() {
+      if (mounted) setState(() {
         _suggestions = [];
         _loadingSuggestions = false;
       });
     }
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _minPrice.dispose();
-    _maxPrice.dispose();
-    _suggestTimer?.cancel();
-    super.dispose();
-  }
-
-  // Helpers to clear fields when switching search mode
   void _clearName() {
     _nameController.clear();
     _suggestions = [];
+    _nameError = null;
   }
 
   void _clearLocation() {
@@ -122,6 +127,8 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
   void _clearAdvanced() {
     _selectedCategoryId = null;
     _selectedSubCategoryId = null;
+    _categoryError = null;
+    _subCategoryError = null;
     _selectedCurrencyId = null;
     _saleType = 'sale';
     _delivery = false;
@@ -130,428 +137,397 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
   }
 
   @override
+  void dispose() {
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
+    _nameController.dispose();
+    _nameFocus.dispose();
+    _minPrice.dispose();
+    _maxPrice.dispose();
+    _suggestTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('خيارات البحث')),
+      appBar: AppBar(title: const Text('بحث')),
       body: Stack(
         children: [
           SafeArea(
             child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  ExpansionPanelList.radio(
-                    initialOpenPanelValue: _nameOpen ? 'name' : (_locationOpen ? 'location' : (_advancedOpen ? 'advanced' : null)),
-                    expansionCallback: (index, isExpanded) {
-                      setState(() {
-                        if (index == 0) {
-                          _nameOpen = !isExpanded;
-                          _locationOpen = false;
-                          _advancedOpen = false;
-                          if (_nameOpen) {
-                            _clearLocation();
-                            _clearAdvanced();
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              final ctx = _nameKey.currentContext;
-                              if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), alignment: 0.1);
-                            });
-                          }
-                        } else if (index == 1) {
-                          _locationOpen = !isExpanded;
-                          _nameOpen = false;
-                          _advancedOpen = false;
-                          if (_locationOpen) {
-                            _clearName();
-                            _clearAdvanced();
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              final ctx = _locationKey.currentContext;
-                              if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), alignment: 0.1);
-                            });
-                          }
-                        } else if (index == 2) {
-                          _advancedOpen = !isExpanded;
-                          _nameOpen = false;
-                          _locationOpen = false;
-                          if (_advancedOpen) {
-                            _clearName();
-                            _clearLocation();
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              final ctx = _advancedKey.currentContext;
-                              if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), alignment: 0.1);
-                            });
-                          }
-                        }
-                      });
-                    },
+              children: [
+                // Tab headers
+                SizedBox(
+                  height: 48,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: Theme.of(context).colorScheme.onPrimary,
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    unselectedLabelColor: Theme.of(context).textTheme.bodyLarge?.color,
+                    tabs: const [
+                      Tab(text: 'اسم'),
+                      Tab(text: 'محافظة/منطقة'),
+                      Tab(text: 'متقدم'),
+                    ],
+                  ),
+                ),
+
+                // Tab content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
                     children: [
-                      ExpansionPanelRadio(
-                        value: 'name',
-                        canTapOnHeader: true,
-                        headerBuilder: (ctx, isOpen) => Container(
-                          color: Theme.of(ctx).colorScheme.primary.withOpacity(0.06),
-                          child: const ListTile(title: Text('بحث بالاسم')),
-                        ),
-                        body: Padding(
-                          key: _nameKey,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                      // Name
+                      ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _nameController,
-                                      decoration: InputDecoration(
-                                        labelText: 'اسم الإعلان أو الكلمات المفتاحية',
-                                        errorText: _nameError,
-                                      ),
+                              Expanded(
+                                child: TextField(
+                                  key: _nameKey,
+                                  focusNode: _nameFocus,
+                                  controller: _nameController,
+                                  decoration: InputDecoration(
+                                    prefixIcon: const Icon(Icons.search),
+                                    labelText: 'ابحث بالاسم',
+                                    errorText: _nameError,
+                                  ),
+                                  onChanged: (v) {
+                                    if (_nameError != null && v.trim().isNotEmpty) {
+                                      if (mounted) setState(() => _nameError = null);
+                                    }
+                                    _suggestTimer?.cancel();
+                                    if (v.trim().isEmpty) {
+                                      if (mounted) setState(() {
+                                        _suggestions = [];
+                                        _loadingSuggestions = false;
+                                      });
+                                      return;
+                                    }
+                                    if (mounted) setState(() => _loadingSuggestions = true);
+                                    _suggestTimer = Timer(const Duration(milliseconds: 350), () async {
+                                      await _fetchSuggestions(v.trim());
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(width: 28, height: 28, child: _loadingSuggestions ? const CircularProgressIndicator(strokeWidth: 2) : const SizedBox()),
+                            ],
+                          ),
+
+                          const SizedBox(height: 8),
+                          if (_suggestions.isNotEmpty)
+                            Card(
+                              elevation: 1,
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemBuilder: (ctx, i) {
+                                  final s = _suggestions[i];
+                                  return ListTile(
+                                    title: Text(s),
+                                    onTap: () {
+                                      if (mounted) setState(() {
+                                        _nameController.text = s;
+                                        _suggestions = [];
+                                        _nameError = null;
+                                      });
+                                    },
+                                  );
+                                },
+                                separatorBuilder: (_, __) => const Divider(height: 1),
+                                itemCount: _suggestions.length,
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      // Location
+                      ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        children: [
+                          Padding(
+                            key: _locationKey,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                InputDecorator(
+                                  decoration: InputDecoration(labelText: 'المحافظة', errorText: _cityError),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<int>(
+                                      isExpanded: true,
+                                      value: _selectedCityId,
+                                      hint: const Text('اختر المحافظة'),
+                                      items: (_options?.provinces ?? []).map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
                                       onChanged: (v) {
-                                        // clear any previous field-level error when user types
-                                        if (_nameError != null) setState(() => _nameError = null);
-                                        // debounce suggestions
-                                        _suggestTimer?.cancel();
-                                        if (v.trim().isEmpty) {
-                                          setState(() {
-                                            _suggestions = [];
-                                            _loadingSuggestions = false;
-                                          });
-                                          return;
-                                        }
-                                        setState(() => _loadingSuggestions = true);
-                                        _suggestTimer = Timer(const Duration(milliseconds: 350), () async {
-                                          await _fetchSuggestions(v.trim());
+                                        if (mounted) setState(() {
+                                          _selectedCityId = v;
+                                          _selectedRegionId = null;
+                                          _cityError = null;
+                                          _regionError = null;
                                         });
                                       },
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: _loadingSuggestions ? const CircularProgressIndicator(strokeWidth: 2) : const SizedBox.shrink(),
-                                  ),
-                                ],
-                              ),
-                              if (_suggestions.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Card(
-                                  elevation: 1,
-                                  child: ListView.separated(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    itemBuilder: (ctx, i) {
-                                      final s = _suggestions[i];
-                                      return ListTile(
-                                        title: Text(s),
-                                        onTap: () {
-                                          setState(() {
-                                            _nameController.text = s;
-                                            _suggestions = [];
-                                            _nameError = null;
-                                          });
-                                        },
-                                      );
-                                    },
-                                    separatorBuilder: (_, __) => const Divider(height: 1),
-                                    itemCount: _suggestions.length,
+                                ),
+                                const SizedBox(height: 12),
+                                InputDecorator(
+                                  decoration: InputDecoration(labelText: 'المنطقة', errorText: _regionError),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<int>(
+                                      isExpanded: true,
+                                      value: _selectedRegionId,
+                                      hint: const Text('اختر المنطقة'),
+                                      items: (_options?.majorAreas.where((a) => a.provinceId == _selectedCityId).toList() ?? [])
+                                          .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
+                                          .toList(),
+                                      onChanged: (v) {
+                                        if (mounted) setState(() {
+                                          _selectedRegionId = v;
+                                          _regionError = null;
+                                        });
+                                      },
+                                    ),
                                   ),
                                 ),
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                        // expansion handled by ExpansionPanelList.radio.expansionCallback
+                        ],
                       ),
-                      ExpansionPanelRadio(
-                        value: 'location',
-                        canTapOnHeader: true,
-                        headerBuilder: (ctx, isOpen) => Container(
-                          color: Theme.of(ctx).colorScheme.secondary.withOpacity(0.06),
-                          child: const ListTile(title: Text('بحث حسب المحافظة و المنطقة')),
-                        ),
-                        body: Padding(
-                          key: _locationKey,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // City dropdown (Province)
-                              InputDecorator(
-                                decoration: InputDecoration(labelText: 'المحافظة', errorText: _cityError),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<int>(
-                                    isExpanded: true,
-                                    value: _selectedCityId,
-                                    hint: const Text('اختر المحافظة'),
-                                    items: (_options?.provinces ?? []).map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
-                                    onChanged: (v) {
-                                      setState(() {
-                                        _selectedCityId = v;
-                                        _selectedRegionId = null;
-                                        _cityError = null;
-                                        _regionError = null;
-                                      });
-                                    },
+
+                      // Advanced
+                      ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        children: [
+                          Padding(
+                            key: _advancedKey,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('التصنيف'),
+                                const SizedBox(height: 8),
+                                InputDecorator(
+                                  decoration: InputDecoration(labelText: 'التصنيف الرئيسي', errorText: _categoryError),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<int>(
+                                      isExpanded: true,
+                                      value: _selectedCategoryId,
+                                      hint: const Text('اختر القسم'),
+                                      items: (_options?.categories ?? []).map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                                      onChanged: (v) {
+                                        if (mounted) setState(() {
+                                          _selectedCategoryId = v;
+                                          _selectedSubCategoryId = null;
+                                          _categoryError = null;
+                                        });
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Region dropdown (depends on selected province)
-                              InputDecorator(
-                                decoration: InputDecoration(labelText: 'المنطقة', errorText: _regionError),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<int>(
-                                    isExpanded: true,
-                                    value: _selectedRegionId,
-                                    hint: const Text('اختر المنطقة'),
-                                    items: (_options?.majorAreas.where((a) => a.provinceId == _selectedCityId).toList() ?? [])
-                                        .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
-                                        .toList(),
-                                    onChanged: (v) => setState(() { _selectedRegionId = v; _regionError = null; }),
+                                const SizedBox(height: 12),
+                                InputDecorator(
+                                  decoration: InputDecoration(labelText: 'التصنيف الفرعي', errorText: _subCategoryError),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<int>(
+                                      isExpanded: true,
+                                      value: _selectedSubCategoryId,
+                                      hint: const Text('اختر التصنيف الفرعي'),
+                                      items: (_options?.subCategories.where((s) => s.categoryId == _selectedCategoryId).toList() ?? [])
+                                          .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                                          .toList(),
+                                      onChanged: (v) {
+                                        if (mounted) setState(() {
+                                          _selectedSubCategoryId = v;
+                                          _subCategoryError = null;
+                                        });
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // expansion handled by ExpansionPanelList.radio.expansionCallback
-                      ),
-                      ExpansionPanelRadio(
-                        value: 'advanced',
-                        canTapOnHeader: true,
-                        headerBuilder: (ctx, isOpen) => Container(
-                          color: Theme.of(ctx).colorScheme.tertiary.withOpacity(0.06),
-                          child: const ListTile(title: Text('بحث متقدم')),
-                        ),
-                        body: Padding(
-                          key: _advancedKey,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Categories and subcategories
-                              const Text('التصنيف'),
-                              const SizedBox(height: 8),
-                              InputDecorator(
-                                decoration: const InputDecoration(labelText: 'القسم الرئيسي'),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<int>(
-                                    isExpanded: true,
-                                    value: _selectedCategoryId,
-                                    hint: const Text('اختر القسم'),
-                                    items: (_options?.categories ?? []).map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                                    onChanged: (v) {
-                                      setState(() {
-                                        _selectedCategoryId = v;
-                                        _selectedSubCategoryId = null;
-                                      });
-                                    },
+                                const SizedBox(height: 12),
+                                InputDecorator(
+                                  decoration: const InputDecoration(labelText: 'العملة'),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<int>(
+                                      isExpanded: true,
+                                      value: _selectedCurrencyId,
+                                      hint: const Text('اختر العملة'),
+                                      items: (_options?.currencies ?? []).map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                                      onChanged: (v) {
+                                        if (mounted) setState(() => _selectedCurrencyId = v);
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              InputDecorator(
-                                decoration: const InputDecoration(labelText: 'التصنيف الفرعي'),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<int>(
-                                    isExpanded: true,
-                                    value: _selectedSubCategoryId,
-                                    hint: const Text('اختر التصنيف الفرعي'),
-                                    items: (_options?.subCategories.where((s) => s.categoryId == _selectedCategoryId).toList() ?? [])
-                                        .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
-                                        .toList(),
-                                    onChanged: (v) => setState(() => _selectedSubCategoryId = v),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              // Currency
-                              InputDecorator(
-                                decoration: const InputDecoration(labelText: 'العملة'),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<int>(
-                                    isExpanded: true,
-                                    value: _selectedCurrencyId,
-                                    hint: const Text('اختر العملة'),
-                                    items: (_options?.currencies ?? []).map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                                    onChanged: (v) => setState(() => _selectedCurrencyId = v),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              // Sale type and delivery
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: InputDecorator(
-                                      decoration: const InputDecoration(labelText: 'نوع الإعلان'),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<String>(
-                                          isExpanded: true,
-                                          value: _saleType,
-                                          items: const [
-                                            DropdownMenuItem(value: 'sale', child: Text('للبيع')),
-                                            DropdownMenuItem(value: 'rent', child: Text('للإيجار')),
-                                          ],
-                                          onChanged: (v) => setState(() => _saleType = v ?? 'sale'),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: InputDecorator(
+                                        decoration: const InputDecoration(labelText: 'نوع الإعلان'),
+                                        child: DropdownButtonHideUnderline(
+                                          child: DropdownButton<String>(
+                                            isExpanded: true,
+                                            value: _saleType,
+                                            items: const [
+                                              DropdownMenuItem(value: 'sale', child: Text('للبيع')),
+                                              DropdownMenuItem(value: 'rent', child: Text('للإيجار')),
+                                            ],
+                                            onChanged: (v) {
+                                              if (mounted) setState(() => _saleType = v ?? 'sale');
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: InputDecorator(
-                                      decoration: const InputDecoration(labelText: 'التوصيل'),
-                                      child: SwitchListTile(
-                                        contentPadding: EdgeInsets.zero,
-                                        title: Text(_delivery ? 'مع توصيل' : 'بدون توصيل'),
-                                        value: _delivery,
-                                        onChanged: (v) => setState(() => _delivery = v),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: InputDecorator(
+                                        decoration: const InputDecoration(labelText: 'التوصيل'),
+                                        child: SwitchListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          title: Text(_delivery ? 'مع توصيل' : 'بدون توصيل'),
+                                          value: _delivery,
+                                          onChanged: (v) {
+                                            if (mounted) setState(() => _delivery = v);
+                                          },
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              // Price range
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _minPrice,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(labelText: 'الحد الأدنى للسعر'),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _minPrice,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(labelText: 'الحد الأدنى للسعر'),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _maxPrice,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(labelText: 'الحد الأقصى للسعر'),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _maxPrice,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(labelText: 'الحد الأقصى للسعر'),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        // expansion handled by ExpansionPanelList.radio.expansionCallback
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            // Fixed bottom bar with Search and Cancel
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6)]),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                // Fixed bottom bar with Search and Cancel
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6)]),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('إلغاء'),
+                        ),
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('إلغاء'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            // Name mode
+                            if (_mode == SearchMode.name) {
+                              final query = _nameController.text.trim();
+                              if (query.isEmpty) {
+                                if (mounted) setState(() => _nameError = 'أدخل كلمة للبحث');
+                                return;
+                              }
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Future.delayed(const Duration(milliseconds: 200), () {
+                                  if (!mounted) return;
+                                  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SearchResultsScreen(title: query)));
+                                });
+                              });
+                              return;
+                            }
+
+                            // Location mode
+                            if (_mode == SearchMode.location) {
+                              final cityErr = _selectedCityId == null ? 'اختر المحافظة' : null;
+                              final regionErr = _selectedRegionId == null ? 'اختر المنطقة' : null;
+                              if (cityErr != null || regionErr != null) {
+                                if (mounted) setState(() {
+                                  _cityError = cityErr;
+                                  _regionError = regionErr;
+                                });
+                                return;
+                              }
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Future.delayed(const Duration(milliseconds: 200), () {
+                                  if (!mounted) return;
+                                  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SearchResultsScreen(cityId: _selectedCityId, regionId: _selectedRegionId)));
+                                });
+                              });
+                              return;
+                            }
+
+                            // Advanced mode
+                            if (_mode == SearchMode.advanced) {
+                              final catErr = _selectedCategoryId == null ? 'اختر القسم' : null;
+                              final subErr = _selectedSubCategoryId == null ? 'اختر التصنيف الفرعي' : null;
+                              if (catErr != null || subErr != null) {
+                                if (mounted) setState(() {
+                                  _categoryError = catErr;
+                                  _subCategoryError = subErr;
+                                });
+                                return;
+                              }
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Future.delayed(const Duration(milliseconds: 200), () {
+                                  if (!mounted) return;
+                                  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SearchResultsScreen(
+                                    categoryId: _selectedCategoryId,
+                                    subCategoryId: _selectedSubCategoryId,
+                                    forSale: _saleType == 'sale' ? 'true' : 'false',
+                                    deliveryService: _delivery ? 'true' : 'false',
+                                    priceMin: _minPrice.text.isNotEmpty ? _minPrice.text : null,
+                                    priceMax: _maxPrice.text.isNotEmpty ? _maxPrice.text : null,
+                                    currencyId: _selectedCurrencyId,
+                                  )));
+                                });
+                              });
+                              return;
+                            }
+
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('بحث'),
+                        ),
                       ),
-                      onPressed: () {
-                        // If name mode is selected, navigate to results screen
-                        if (_nameOpen) {
-                          final query = _nameController.text.trim();
-                          if (query.isEmpty) {
-                            setState(() => _nameError = 'أدخل كلمة للبحث');
-                            return;
-                          }
-                          // schedule navigation after current frame/animations complete
-                          // add a small delay to avoid navigator locked errors during other transitions
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            // small delay to avoid navigator locked assertions
-                            Future.delayed(const Duration(milliseconds: 300), () {
-                              if (!mounted) return;
-                              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                                builder: (_) => SearchResultsScreen(title: query),
-                              ));
-                            });
-                          });
-                          return;
-                        }
-
-                        // If location mode is selected, validate and navigate
-                        if (_locationOpen) {
-                          // validate province and region. Update both error fields in a
-                          // single setState to ensure the UI rebuilds and shows both
-                          // messages at once.
-                          final cityErr = _selectedCityId == null ? 'اختر المحافظة' : null;
-                          final regionErr = _selectedRegionId == null ? 'اختر المنطقة' : null;
-                          if (cityErr != null || regionErr != null) {
-                            setState(() {
-                              _cityError = cityErr;
-                              _regionError = regionErr;
-                            });
-                            return;
-                          }
-
-                          // navigate to results screen for location search
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            Future.delayed(const Duration(milliseconds: 300), () {
-                              if (!mounted) return;
-                              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                                builder: (_) => SearchResultsScreen(cityId: _selectedCityId, regionId: _selectedRegionId),
-                              ));
-                            });
-                          });
-                          return;
-                        }
-
-                        // If no specific panel is open, prefer to open the location
-                        // panel and show field-level errors instead of popping to the
-                        // previous screen. This avoids accidentally returning to the
-                        // home tab when the user intended to search by location.
-                        if (!_nameOpen && !_locationOpen && !_advancedOpen) {
-                          setState(() {
-                            _locationOpen = true;
-                            _nameOpen = false;
-                            _advancedOpen = false;
-                            // show errors for missing selection so user sees whats required
-                            _cityError = _selectedCityId == null ? 'اختر المحافظة' : null;
-                            _regionError = _selectedRegionId == null ? 'اختر المنطقة' : null;
-                          });
-                          return;
-                        }
-
-                        // Otherwise keep the previous behavior (pop) for other modes.
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('بحث'),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
             ),
           ),
           if (_loadingOptions)
