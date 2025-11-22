@@ -767,6 +767,12 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                                 lat = coords[0];
                               }
 
+                              // Treat [0,0] as "no location set"
+                              final bool hasValidCoords = coords.length >= 2 && !( (coords[0] == 0 || coords[0] == 0.0) && (coords[1] == 0 || coords[1] == 0.0) );
+                              if (!hasValidCoords) {
+                                return const Text('لم يتم تحديد موقع');
+                              }
+
                               void openDirections() async {
                                 // Try app-first (comgooglemaps / geo), then web fallback.
                                 // Use precise coordinates (lat, lng) derived from backend values.
