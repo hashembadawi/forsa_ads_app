@@ -91,13 +91,9 @@ class _EditAdScreenState extends State<EditAdScreen> {
 
       if (mounted) {
         Notifications.hideLoading(context);
-        Navigator.of(context).pop(true); // Return true to indicate deletion
-        Notifications.showSnack(
-          context,
-          'تم حذف الإعلان بنجاح',
-          type: NotificationType.success,
-          icon: Icons.check_circle,
-        );
+        Notifications.showSuccess(context, 'تم حذف الإعلان بنجاح', onOk: () {
+          Navigator.of(context).pop(true); // Return true to indicate deletion after OK
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -154,13 +150,9 @@ class _EditAdScreenState extends State<EditAdScreen> {
       
       if (mounted) {
         Notifications.hideLoading(context);
-        Navigator.of(context).pop(true); // Return true to indicate update
-        Notifications.showSnack(
-          context,
-          'تم تعديل الإعلان بنجاح',
-          type: NotificationType.success,
-          icon: Icons.check_circle,
-        );
+        Notifications.showSuccess(context, 'تم تعديل الإعلان بنجاح', onOk: () {
+          Navigator.of(context).pop(true); // Return true to indicate update after OK
+        });
       }
     } catch (e) {
       if (mounted) {
