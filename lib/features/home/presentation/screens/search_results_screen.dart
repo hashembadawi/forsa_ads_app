@@ -12,8 +12,10 @@ import '../../../../core/ui/app_keys.dart';
 import '../../../../shared/providers/app_state_provider.dart';
 
 class SearchResultsScreen extends ConsumerStatefulWidget {
-  final String title;
-  const SearchResultsScreen({Key? key, required this.title}) : super(key: key);
+  final String? title;
+  final int? cityId;
+  final int? regionId;
+  const SearchResultsScreen({Key? key, this.title, this.cityId, this.regionId}) : super(key: key);
 
   @override
   ConsumerState<SearchResultsScreen> createState() => _SearchResultsScreenState();
@@ -40,13 +42,32 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     try {
       Notifications.showLoading(ctx, message: 'جاري البحث...');
       final dio = Dio();
-      final resp = await dio.get(
-        'https://sahbo-app-api.onrender.com/api/ads/search-by-title',
-        queryParameters: {'title': widget.title, 'page': 1, 'limit': 10},
-      );
+      Response resp;
+      List<dynamic> adsJson = [];
 
-      final data = resp.data as Map<String, dynamic>?;
-      final adsJson = data?['ads'] as List<dynamic>? ?? [];
+      if (widget.cityId != null && widget.regionId != null) {
+        resp = await dio.get(
+          'https://sahbo-app-api.onrender.com/api/ads/search',
+          queryParameters: {'cityId': widget.cityId, 'regionId': widget.regionId, 'page': 1, 'limit': 10},
+        );
+        final data = resp.data as Map<String, dynamic>?;
+        adsJson = data?['ads'] as List<dynamic>? ?? [];
+      } else if (widget.title != null && widget.title!.isNotEmpty) {
+        resp = await dio.get(
+          'https://sahbo-app-api.onrender.com/api/ads/search-by-title',
+          queryParameters: {'title': widget.title, 'page': 1, 'limit': 10},
+        );
+        final data = resp.data as Map<String, dynamic>?;
+        adsJson = data?['ads'] as List<dynamic>? ?? [];
+      } else {
+        setState(() {
+          _ads = [];
+          _loading = false;
+          _error = 'لم يتم تحديد معايير البحث';
+        });
+        Notifications.hideLoading(ctx);
+        return;
+      }
       final List<UserAd> ads = adsJson.map((e) => UserAd.fromJson(Map<String, dynamic>.from(e as Map))).toList();
 
       setState(() {
@@ -68,7 +89,11 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('نتائج البحث: "${widget.title}"')),
+      appBar: AppBar(
+        title: Text(widget.cityId != null && widget.regionId != null
+        ? 'نتائج البحث: المحافظة ${widget.cityId} - المنطقة ${widget.regionId}'
+        : 'نتائج البحث: "${widget.title ?? ''}"'),
+      ),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -84,7 +109,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     ),
                   )
                 : _ads.isEmpty
-                    ? Center(child: Text('لا توجد نتائج لـ "${widget.title}"'))
+                    ? Center(child: Text(widget.cityId != null && widget.regionId != null
+                      ? 'لا توجد نتائج للبحث في هذه المحافظة/المنطقة'
+                      : 'لا توجد نتائج لـ "${widget.title}"'))
                     : RefreshIndicator(
                         onRefresh: _fetch,
                         child: ListView.separated(

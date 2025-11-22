@@ -28,6 +28,8 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
   bool _loadingSuggestions = false;
   int? _selectedCityId;
   int? _selectedRegionId;
+  String? _cityError;
+  String? _regionError;
   int? _selectedCategoryId;
   int? _selectedSubCategoryId;
   int? _selectedCurrencyId;
@@ -113,6 +115,8 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
   void _clearLocation() {
     _selectedCityId = null;
     _selectedRegionId = null;
+    _cityError = null;
+    _regionError = null;
   }
 
   void _clearAdvanced() {
@@ -266,7 +270,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                         canTapOnHeader: true,
                         headerBuilder: (ctx, isOpen) => Container(
                           color: Theme.of(ctx).colorScheme.secondary.withOpacity(0.06),
-                          child: const ListTile(title: Text('بحث حسب المدينة والمنطقة')),
+                          child: const ListTile(title: Text('بحث حسب المحافظة و المنطقة')),
                         ),
                         body: Padding(
                           key: _locationKey,
@@ -276,7 +280,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                             children: [
                               // City dropdown (Province)
                               InputDecorator(
-                                decoration: const InputDecoration(labelText: 'المحافظة'),
+                                decoration: InputDecoration(labelText: 'المحافظة', errorText: _cityError),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     isExpanded: true,
@@ -287,6 +291,8 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                                       setState(() {
                                         _selectedCityId = v;
                                         _selectedRegionId = null;
+                                        _cityError = null;
+                                        _regionError = null;
                                       });
                                     },
                                   ),
@@ -296,7 +302,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
 
                               // Region dropdown (depends on selected province)
                               InputDecorator(
-                                decoration: const InputDecoration(labelText: 'المنطقة'),
+                                decoration: InputDecoration(labelText: 'المنطقة', errorText: _regionError),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     isExpanded: true,
@@ -305,7 +311,7 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                                     items: (_options?.majorAreas.where((a) => a.provinceId == _selectedCityId).toList() ?? [])
                                         .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
                                         .toList(),
-                                    onChanged: (v) => setState(() => _selectedRegionId = v),
+                                    onChanged: (v) => setState(() { _selectedRegionId = v; _regionError = null; }),
                                   ),
                                 ),
                               ),
@@ -493,7 +499,50 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> {
                           return;
                         }
 
-                        // For other modes we'll just pop for now (search wiring later)
+                        // If location mode is selected, validate and navigate
+                        if (_locationOpen) {
+                          // validate province and region. Update both error fields in a
+                          // single setState to ensure the UI rebuilds and shows both
+                          // messages at once.
+                          final cityErr = _selectedCityId == null ? 'اختر المحافظة' : null;
+                          final regionErr = _selectedRegionId == null ? 'اختر المنطقة' : null;
+                          if (cityErr != null || regionErr != null) {
+                            setState(() {
+                              _cityError = cityErr;
+                              _regionError = regionErr;
+                            });
+                            return;
+                          }
+
+                          // navigate to results screen for location search
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              if (!mounted) return;
+                              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                                builder: (_) => SearchResultsScreen(cityId: _selectedCityId, regionId: _selectedRegionId),
+                              ));
+                            });
+                          });
+                          return;
+                        }
+
+                        // If no specific panel is open, prefer to open the location
+                        // panel and show field-level errors instead of popping to the
+                        // previous screen. This avoids accidentally returning to the
+                        // home tab when the user intended to search by location.
+                        if (!_nameOpen && !_locationOpen && !_advancedOpen) {
+                          setState(() {
+                            _locationOpen = true;
+                            _nameOpen = false;
+                            _advancedOpen = false;
+                            // show errors for missing selection so user sees whats required
+                            _cityError = _selectedCityId == null ? 'اختر المحافظة' : null;
+                            _regionError = _selectedRegionId == null ? 'اختر المنطقة' : null;
+                          });
+                          return;
+                        }
+
+                        // Otherwise keep the previous behavior (pop) for other modes.
                         Navigator.of(context).pop();
                       },
                       child: const Text('بحث'),
