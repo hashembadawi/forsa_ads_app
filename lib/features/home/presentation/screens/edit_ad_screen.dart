@@ -114,72 +114,13 @@ class _EditAdScreenState extends State<EditAdScreen> {
 
   Future<void> _updateAd() async {
     // Validate all required fields before form validation
-    final title = _titleController.text.trim();
-    final price = _priceController.text.trim();
-    final description = _descriptionController.text.trim();
-
-    if (title.isEmpty) {
-      Notifications.showSnack(
-        context,
-        'يرجى إدخال عنوان الإعلان',
-        type: NotificationType.info,
-        icon: Icons.info,
-      );
+    // final title/price/description values are validated by the Form fields below
+    // Use Form validators to show messages under fields instead of SnackBars.
+    // Update title length requirement: must be more than 2 characters.
+    if (!_formKey.currentState!.validate()) {
+      // If form is invalid, the validators will show errorText under fields.
       return;
     }
-
-    if (title.length < 5) {
-      Notifications.showSnack(
-        context,
-        'العنوان يجب أن يكون 5 أحرف على الأقل',
-        type: NotificationType.info,
-        icon: Icons.info,
-      );
-      return;
-    }
-
-    if (price.isEmpty) {
-      Notifications.showSnack(
-        context,
-        'يرجى إدخال السعر',
-        type: NotificationType.info,
-        icon: Icons.info,
-      );
-      return;
-    }
-
-    final priceValue = double.tryParse(price);
-    if (priceValue == null || priceValue <= 0) {
-      Notifications.showSnack(
-        context,
-        'السعر غير صحيح',
-        type: NotificationType.info,
-        icon: Icons.info,
-      );
-      return;
-    }
-
-    if (_currencyId == null) {
-      Notifications.showSnack(
-        context,
-        'يرجى اختيار العملة',
-        type: NotificationType.info,
-        icon: Icons.info,
-      );
-      return;
-    }
-
-    if (description.isEmpty) {
-      Notifications.showSnack(
-        context,
-        'يرجى إدخال وصف الإعلان',
-        type: NotificationType.info,
-        icon: Icons.info,
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) return;
 
     Notifications.showLoading(context, message: 'جاري تعديل الإعلان...');
 
@@ -261,8 +202,8 @@ class _EditAdScreenState extends State<EditAdScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return 'يرجى إدخال عنوان الإعلان';
                         }
-                        if (value.trim().length < 5) {
-                          return 'العنوان يجب أن يكون 5 أحرف على الأقل';
+                        if (value.trim().length < 2) {
+                          return 'العنوان يجب أن يكون حرفين على الأقل';
                         }
                         return null;
                       },
