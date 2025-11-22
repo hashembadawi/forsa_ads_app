@@ -22,6 +22,7 @@ class AddAdScreen extends ConsumerStatefulWidget {
 
 class _AddAdScreenState extends ConsumerState<AddAdScreen> {
   int _currentStep = 0;
+  final List<bool> _triedSteps = [false, false, false];
   
   // Data collected from steps
   final Map<String, dynamic> _adData = {
@@ -79,12 +80,8 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
 
   void _onStepContinue() {
     if (!_canProceedToNextStep()) {
-      Notifications.showSnack(
-        context,
-        _getValidationMessage(),
-        type: NotificationType.info,
-        icon: Icons.info,
-      );
+      // Mark current step as attempted so child will show field-level errors
+      setState(() => _triedSteps[_currentStep] = true);
       return;
     }
 
@@ -95,36 +92,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
     }
   }
 
-  String _getValidationMessage() {
-    switch (_currentStep) {
-      case 0:
-        return 'يرجى اختيار التصنيف والتصنيف الفرعي';
-      case 1:
-        if (_adData['adTitle'] == null || _adData['adTitle'].toString().trim().isEmpty) {
-          return 'يرجى إدخال عنوان الإعلان';
-        }
-        if (_adData['price'] == null) {
-          return 'يرجى إدخال السعر';
-        }
-        if (_adData['currencyId'] == null) {
-          return 'يرجى اختيار العملة';
-        }
-        if (_adData['cityId'] == null) {
-          return 'يرجى اختيار المحافظة';
-        }
-        if (_adData['regionId'] == null) {
-          return 'يرجى اختيار المنطقة';
-        }
-        if (_adData['description'] == null || _adData['description'].toString().trim().isEmpty) {
-          return 'يرجى إدخال وصف الإعلان';
-        }
-        return 'يرجى إكمال جميع الحقول المطلوبة';
-      case 2:
-        return 'يرجى اختيار الصورة الرئيسية';
-      default:
-        return 'يرجى إكمال جميع الحقول المطلوبة';
-    }
-  }
+  
 
   void _onStepCancel() {
     if (_currentStep > 0) {
@@ -301,6 +269,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
               key: const ValueKey('step1'),
               adData: _adData,
               options: widget.options,
+              showErrors: _triedSteps[0],
               onDataChanged: (key, value) {
                 setState(() => _adData[key] = value);
               },
@@ -331,6 +300,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
               key: const ValueKey('step2'),
               adData: _adData,
               options: widget.options,
+              showErrors: _triedSteps[1],
               onDataChanged: (key, value) {
                 setState(() => _adData[key] = value);
               },
@@ -360,6 +330,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
           ? Step3Images(
               key: const ValueKey('step3'),
               adData: _adData,
+              showErrors: _triedSteps[2],
               onDataChanged: (key, value) {
                 setState(() => _adData[key] = value);
               },

@@ -6,12 +6,14 @@ class Step1CategoryOptions extends StatelessWidget {
   final Map<String, dynamic> adData;
   final AppOptions options;
   final Function(String key, dynamic value) onDataChanged;
+  final bool showErrors;
 
   const Step1CategoryOptions({
     super.key,
     required this.adData,
     required this.options,
     required this.onDataChanged,
+    this.showErrors = false,
   });
 
   @override
@@ -31,11 +33,12 @@ class Step1CategoryOptions extends StatelessWidget {
           DropdownButtonFormField<int>(
           value: adData['categoryId'],
           isExpanded: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'التصنيف الرئيسي',
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            errorText: showErrors && (adData['categoryId'] == null) ? 'يرجى اختيار التصنيف' : null,
           ),
           items: options.categories.map((category) {
             return DropdownMenuItem<int>(
@@ -64,10 +67,11 @@ class Step1CategoryOptions extends StatelessWidget {
           isExpanded: true,
           decoration: InputDecoration(
             labelText: 'التصنيف الفرعي',
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
             hintText: selectedCategoryId == null ? 'اختر التصنيف الرئيسي أولاً' : 'اختر التصنيف الفرعي',
+            errorText: showErrors && (adData['subCategoryId'] == null) ? 'يرجى اختيار التصنيف الفرعي' : null,
           ),
           items: filteredSubCategories.map((subCategory) {
             return DropdownMenuItem<int>(

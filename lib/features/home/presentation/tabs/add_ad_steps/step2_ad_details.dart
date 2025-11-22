@@ -10,12 +10,14 @@ class Step2AdDetails extends StatefulWidget {
   final Map<String, dynamic> adData;
   final AppOptions options;
   final Function(String key, dynamic value) onDataChanged;
+  final bool showErrors;
 
   const Step2AdDetails({
     super.key,
     required this.adData,
     required this.options,
     required this.onDataChanged,
+    this.showErrors = false,
   });
 
   @override
@@ -152,11 +154,12 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
           // Ad Title
           TextFormField(
           controller: _titleController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'عنوان الإعلان',
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            errorText: widget.showErrors && (_titleController.text.trim().isEmpty) ? 'يرجى إدخال عنوان الإعلان' : null,
           ),
           onChanged: (value) => widget.onDataChanged('adTitle', value),
         ),
@@ -169,11 +172,12 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
               flex: 3,
               child: TextFormField(
                 controller: _priceController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'السعر',
-                  border: OutlineInputBorder(
+                  border: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
+                  errorText: widget.showErrors && (widget.adData['price'] == null || (widget.adData['price'] is num && (widget.adData['price'] as num) <= 0)) ? 'يرجى إدخال السعر' : null,
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
@@ -183,19 +187,22 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
                   final price = double.tryParse(value);
                   widget.onDataChanged('price', price);
                 },
+                // show error below when attempted
+                // Note: errorText for TextFormField requires setting decoration; use a separate check above
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               flex: 2,
               child: DropdownButtonFormField<int>(
-                value: widget.adData['currencyId'],
-                decoration: const InputDecoration(
-                  labelText: 'العملة',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  value: widget.adData['currencyId'],
+                  decoration: InputDecoration(
+                    labelText: 'العملة',
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
+                    errorText: widget.showErrors && (widget.adData['currencyId'] == null) ? 'اختر العملة' : null,
                   ),
-                ),
                 isExpanded: true,
                 menuMaxHeight: 300,
                 selectedItemBuilder: (context) {
@@ -238,11 +245,12 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
         // City Selection
         DropdownButtonFormField<int>(
           value: widget.adData['cityId'],
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'المحافظة',
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            errorText: widget.showErrors && (widget.adData['cityId'] == null) ? 'اختر المحافظة' : null,
           ),
             items: widget.options.provinces.map((province) {
               return DropdownMenuItem<int>(
@@ -266,10 +274,11 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
           value: widget.adData['regionId'],
           decoration: InputDecoration(
             labelText: 'المنطقة',
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
               hintText: selectedProvinceId == null ? 'اختر المحافظة أولاً' : 'اختر المنطقة',
+              errorText: widget.showErrors && (widget.adData['regionId'] == null) ? 'اختر المنطقة' : null,
           ),
             items: filteredMajorAreas.map((area) {
               return DropdownMenuItem<int>(
@@ -380,12 +389,13 @@ class _Step2AdDetailsState extends State<Step2AdDetails> {
         // Description
         TextFormField(
           controller: _descriptionController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'وصف المنتج',
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
             alignLabelWithHint: true,
+            errorText: widget.showErrors && (_descriptionController.text.trim().isEmpty) ? 'يرجى إدخال وصف الإعلان' : null,
           ),
           maxLines: 4,
           onChanged: (value) => widget.onDataChanged('description', value),

@@ -7,11 +7,13 @@ import '../../../../../core/ui/notifications.dart';
 class Step3Images extends StatefulWidget {
   final Map<String, dynamic> adData;
   final Function(String key, dynamic value) onDataChanged;
+  final bool showErrors;
 
   const Step3Images({
     super.key,
     required this.adData,
     required this.onDataChanged,
+    this.showErrors = false,
   });
 
   @override
@@ -224,6 +226,14 @@ class _Step3ImagesState extends State<Step3Images> {
             onTap: _pickThumbnail,
             isThumbnail: true,
           ),
+          if (widget.showErrors && _thumbnail == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+              child: Text(
+                'يرجى اختيار الصورة الرئيسية',
+                style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+              ),
+            ),
           const SizedBox(height: 24),
 
           // Additional Images Header with Counter
