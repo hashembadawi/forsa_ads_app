@@ -44,18 +44,22 @@ class _FavoritesTabState extends ConsumerState<FavoritesTab> {
       _ads = [];
       _total = 0;
     }
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     try {
       final appState = ref.read(appStateProvider);
       final token = appState.userToken;
       if (token == null || token.isEmpty) {
-        setState(() {
-          _error = 'يجب تسجيل الدخول لعرض المفضلات';
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _error = 'يجب تسجيل الدخول لعرض المفضلات';
+            _isLoading = false;
+          });
+        }
         return;
       }
 
@@ -67,16 +71,19 @@ class _FavoritesTabState extends ConsumerState<FavoritesTab> {
       final service = UserAdsService(dio);
       final res = await service.fetchFavorites(token: token, page: _page, limit: _limit);
       final List<UserAd> fetched = (res['ads'] as List<dynamic>).cast<UserAd>();
+      if (!mounted) return;
       setState(() {
         if (_page == 1) _ads = fetched; else _ads.addAll(fetched);
         _total = res['total'] ?? _total;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        });
+      }
     }
   }
 

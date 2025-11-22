@@ -90,9 +90,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.cityId != null && widget.regionId != null
-        ? 'نتائج البحث: المحافظة ${widget.cityId} - المنطقة ${widget.regionId}'
-        : 'نتائج البحث: "${widget.title ?? ''}"'),
+        title: const Text('نتائج البحث'),
       ),
       body: SafeArea(
         child: _loading
