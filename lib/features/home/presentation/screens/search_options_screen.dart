@@ -111,31 +111,6 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> with SingleTi
     }
   }
 
-  void _clearName() {
-    _nameController.clear();
-    _suggestions = [];
-    _nameError = null;
-  }
-
-  void _clearLocation() {
-    _selectedCityId = null;
-    _selectedRegionId = null;
-    _cityError = null;
-    _regionError = null;
-  }
-
-  void _clearAdvanced() {
-    _selectedCategoryId = null;
-    _selectedSubCategoryId = null;
-    _categoryError = null;
-    _subCategoryError = null;
-    _selectedCurrencyId = null;
-    _saleType = 'sale';
-    _delivery = false;
-    _minPrice.clear();
-    _maxPrice.clear();
-  }
-
   @override
   void dispose() {
     _tabController.removeListener(_onTabChanged);
@@ -162,7 +137,9 @@ class _SearchOptionsScreenState extends State<SearchOptionsScreen> with SingleTi
                   height: 48,
                   child: TabBar(
                     controller: _tabController,
-                    labelColor: Theme.of(context).colorScheme.onPrimary,
+                    // Use primary color for selected tab label so it's not white
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    // Keep the indicator aligned with primary color
                     indicatorColor: Theme.of(context).colorScheme.primary,
                     unselectedLabelColor: Theme.of(context).textTheme.bodyLarge?.color,
                     tabs: const [
